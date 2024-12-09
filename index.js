@@ -1,3 +1,5 @@
+// const sequelize = require('./config/config');
+const { sequelizeAuthAndSync } = require('./controllers/connectionDB');
 const helmet = require('helmet');
 const express = require('express');
 const cors = require('cors');
@@ -9,6 +11,8 @@ const app = express();
 app.use(cors());
 app.use(helmet()); 
 app.use(express.json());
+
+sequelizeAuthAndSync()
 
 // Routes
 const userRoutes = require('./routes/userRoutes');
