@@ -31,6 +31,7 @@ Audit.init(
   {
     sequelize,
     modelName: 'Audit',
+    tableName: 'Audit',
   }
 );
 

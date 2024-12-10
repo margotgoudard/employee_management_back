@@ -41,7 +41,6 @@ const companyController = {
         logo: company.logo ? company.logo.toString('base64') : null,
       };
 
-      console.log(companyResponse)
       return res.status(201).json({ message: 'Company created successfully', company: companyResponse });
     } catch (error) {
       return res.status(500).json({ message: 'Error creating company', error });
@@ -72,8 +71,8 @@ const companyController = {
 
   getCompanyById: async (req, res) => {
     try {
-      const { id } = req.params;
-      const company = await Company.findByPk(id);
+      const { id_company } = req.params;
+      const company = await Company.findByPk(id_company);
 
       if (!company) {
         return res.status(404).json({ message: 'Company not found' });
@@ -99,7 +98,7 @@ const companyController = {
 
   updateCompany: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_company } = req.params;
       const {
         name,
         num_address,
@@ -110,7 +109,7 @@ const companyController = {
         country_address,
       } = req.body;
 
-      const company = await Company.findByPk(id);
+      const company = await Company.findByPk(id_company);
 
       if (!company) {
         return res.status(404).json({ message: 'Company not found' });
@@ -152,9 +151,9 @@ const companyController = {
 
   deleteCompany: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_company } = req.params;
 
-      const company = await Company.findByPk(id);
+      const company = await Company.findByPk(id_company);
 
       if (!company) {
         return res.status(404).json({ message: 'Company not found' });

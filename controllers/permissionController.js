@@ -28,9 +28,9 @@ const permissionController = {
 
   getPermissionById: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_permission } = req.params;
 
-      const permission = await Permission.findByPk(id);
+      const permission = await Permission.findByPk(id_permission);
 
       if (!permission) {
         return res.status(404).json({ message: 'Permission not found' });
@@ -44,10 +44,10 @@ const permissionController = {
 
   updatePermission: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_permission } = req.params;
       const { name } = req.body;
 
-      const permission = await Permission.findByPk(id);
+      const permission = await Permission.findByPk(id_permission);
 
       if (!permission) {
         return res.status(404).json({ message: 'Permission not found' });
@@ -62,9 +62,9 @@ const permissionController = {
 
   deletePermission: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_permission } = req.params;
 
-      const permission = await Permission.findByPk(id);
+      const permission = await Permission.findByPk(id_permission);
 
       if (!permission) {
         return res.status(404).json({ message: 'Permission not found' });

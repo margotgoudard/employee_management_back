@@ -19,11 +19,15 @@ const userRoutes = require('./routes/userRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const permissionRoutes = require('./routes/permissionRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const documentRoutes = require('./routes/documentRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/audits', auditRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/permissions', permissionRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/documents', documentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
