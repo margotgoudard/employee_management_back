@@ -20,6 +20,7 @@ ComplianceCheck.init(
     },
     function_code: {
       type: DataTypes.STRING(255),
+      allowNull: false,
     },
   },
   {

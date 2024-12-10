@@ -1,11 +1,11 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/sequelize');
 
-class Permission extends Model {}
+class DocumentCategory extends Model {}
 
-Permission.init(
+DocumentCategory.init(
   {
-    id_permission: {
+    id_category: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
@@ -18,9 +18,9 @@ Permission.init(
   },
   {
     sequelize,
-    modelName: 'Permission',
-    tableName: 'permission',
+    modelName: 'DocumentCategory',
+    tableName: 'document_category',
   }
 );
 
-module.exports = Permission;
+module.exports = DocumentCategory;

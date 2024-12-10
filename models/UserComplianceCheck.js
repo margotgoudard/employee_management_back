@@ -5,6 +5,12 @@ class UserComplianceCheck extends Model {}
 
 UserComplianceCheck.init(
   {
+    id_user_compliance_check: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
     id_compliance_check: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -12,11 +18,14 @@ UserComplianceCheck.init(
     id_user: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: 'user',
+        key: 'id_user',
+      },
     },
     parameters: {
-     type: DataTypes.JSONB,
+     type: DataTypes.JSON,
      allowNull: true, 
-     defaultValue: {}, 
    },
   },
   {
