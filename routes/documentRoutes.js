@@ -5,8 +5,8 @@ const upload = require('../middleware/upload');
 
 router.post('/', upload.single('document'), documentController.createDocument); 
 router.get('/', documentController.getDocuments);
-router.get('/:id', documentController.getDocumentById); 
-router.put('/:id', upload.single('document'), documentController.updateDocument); 
-router.delete('/:id', documentController.deleteDocument); 
+router.get('/:id_document', documentController.getDocumentById); 
+router.put('/:id_document', upload.single('document'), documentController.updateDocument); 
+router.delete('/:id_document', documentController.deleteDocument); 
 
 module.exports = router;
