@@ -16,42 +16,55 @@ User.init(
     },
     last_name: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     role: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     mail: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     phone: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     password: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     num_address: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     street_address: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     city_address: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     area_code_address: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     region_address: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     country_address: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
     is_admin: {
       type: DataTypes.BOOLEAN,
+      allowNull: false,
     },
     is_sup_admin: {
       type: DataTypes.BOOLEAN,
+      allowNull: false,
     },
     last_connected: {
       type: DataTypes.DATE,
@@ -60,6 +73,7 @@ User.init(
   {
     sequelize,  
     modelName: 'User',
+    tableName: 'user',
   }
 );
 
