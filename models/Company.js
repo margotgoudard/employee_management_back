@@ -15,12 +15,32 @@ Company.init(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    address: {
+    num_address: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    street_address: {
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    city_address: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    area_code_address: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    region_address: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    country_address: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
     logo: {
-      type: DataTypes.BLOB('long'),
+      type: DataTypes.BLOB('long'), 
       allowNull: true,
     },
   },

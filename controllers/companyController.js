@@ -4,14 +4,32 @@ const companyController = {
 
     createCompany: async (req, res) => {
     try {
-      const { name, address } = req.body;
+      const {
+        name,
+        num_address,
+        street_address,
+        city_address,
+        area_code_address,
+        region_address,
+        country_address,
+      } = req.body;
 
       let logo = null;
       if (req.file) {
-        logo = req.file.buffer; 
+        logo = req.file.buffer;
       }
 
-      const company = await Company.create({ name, address, logo });
+      const company = await Company.create({
+        name,
+        num_address,
+        street_address,
+        city_address,
+        area_code_address,
+        region_address,
+        country_address,
+        logo,
+      });
+
       return res.status(201).json({ message: 'Company created successfully', company });
     } catch (error) {
       return res.status(500).json({ message: 'Error creating company', error });
@@ -26,7 +44,12 @@ const companyController = {
         return {
           id_company: company.id_company,
           name: company.name,
-          address: company.address,
+          num_address: company.num_address,
+          street_address: company.street_address,
+          city_address: company.city_address,
+          area_code_address: company.area_code_address,
+          region_address: company.region_address,
+          country_address: company.country_address,
           logo: company.logo ? company.logo.toString('base64') : null,
         };
       });
@@ -49,7 +72,12 @@ const companyController = {
       const result = {
         id_company: company.id_company,
         name: company.name,
-        address: company.address,
+        num_address: company.num_address,
+        street_address: company.street_address,
+        city_address: company.city_address,
+        area_code_address: company.area_code_address,
+        region_address: company.region_address,
+        country_address: company.country_address,
         logo: company.logo ? company.logo.toString('base64') : null,
       };
 
@@ -62,7 +90,15 @@ const companyController = {
   updateCompany: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, address } = req.body;
+      const {
+        name,
+        num_address,
+        street_address,
+        city_address,
+        area_code_address,
+        region_address,
+        country_address,
+      } = req.body;
 
       const company = await Company.findByPk(id);
 
@@ -75,7 +111,17 @@ const companyController = {
         logo = req.file.buffer;
       }
 
-      await company.update({ name, address, logo });
+      await company.update({
+        name,
+        num_address,
+        street_address,
+        city_address,
+        area_code_address,
+        region_address,
+        country_address,
+        logo,
+      });
+
       return res.status(200).json({ message: 'Company updated successfully', company });
     } catch (error) {
       return res.status(500).json({ message: 'Error updating company', error });
