@@ -1,4 +1,5 @@
 const Company = require('../models/Company');
+const User = require('../models/User');
 
 const companyController = {
   createCompany: async (req, res) => {
@@ -165,6 +166,27 @@ const companyController = {
       return res.status(500).json({ message: 'Error deleting company', error });
     }
   },
+
+  getUsersByCompanyId: async (req, res) => {
+    try {
+      const { id_company } = req.params;
+      const company = await Company.findByPk(id_company, {
+        include: {
+          model: User,
+          through: { attributes: [] },
+        },
+      });
+      console.log(company)
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+  
+      return res.status(200).json(company.Users); 
+    } catch (error) {
+      return res.status(500).json({ message: 'Error fetching users by company', error });
+    }
+  },
+
 };
 
 module.exports = companyController;
