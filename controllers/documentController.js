@@ -1,50 +1,78 @@
 const Document = require('../models/Document');
 const Category = require('../models/Category');
+const User = require('../models/User');
 
 const documentController = {
-
     createDocument: async (req, res) => {
-    try {
-      const { name, id_cat } = req.body;
-
-      if (!name || !id_cat) {
-        return res.status(400).json({ message: 'Name and Category ID are required' });
-      }
-
-      const category = await Category.findByPk(id_cat);
-      if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
-      }
-
-      let document = null;
-      if (req.file) {
-        document = req.file.buffer; 
-      } else {
-        return res.status(400).json({ message: 'Document file is required' });
-      }
-
-      const newDocument = await Document.create({ name, id_cat, document });
-      return res.status(201).json({ message: 'Document created successfully', document: newDocument });
-    } catch (error) {
-      return res.status(500).json({ message: 'Error creating document', error });
-    }
-  },
+        try {
+          const { name, id_category, id_user } = req.body;
+      
+          if (!name || !id_category || !id_user) {
+            return res.status(400).json({
+              message: 'Name, Category ID, and User ID are required',
+            });
+          }
+      
+          const category = await Category.findByPk(id_category);
+          if (!category) {
+            return res.status(404).json({ message: 'Category not found' });
+          }
+      
+          const user = await User.findByPk(id_user);
+          if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+          }
+      
+          let document = null;
+          if (req.file) {
+            document = req.file.buffer; 
+          } else {
+            return res.status(400).json({ message: 'Document file is required' });
+          }
+      
+          const newDocument = await Document.create({ name, id_category, id_user, document });
+      
+          const base64Document = document.toString('base64');
+      
+          return res.status(201).json({
+            message: 'Document created successfully',
+            document: {
+              id_doc: newDocument.id_doc,
+              name: newDocument.name,
+              id_category: newDocument.id_category,
+              id_user: newDocument.id_user,
+              document: base64Document,
+            },
+          });
+        } catch (error) {
+          return res.status(500).json({ message: 'Error creating document', error });
+        }
+      },      
 
   getDocuments: async (req, res) => {
     try {
       const documents = await Document.findAll({
-        include: {
-          model: Category,
-          as: 'category',
-          attributes: ['id_category', 'name'],
-        },
+        include: [
+          {
+            model: Category,
+            as: 'category',
+            attributes: ['id_category', 'name'],
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id_user', 'first_name', 'last_name'],
+          },
+        ],
       });
 
       const result = documents.map((doc) => ({
         id_doc: doc.id_doc,
         name: doc.name,
-        id_cat: doc.id_cat,
+        id_category: doc.id_category,
         category: doc.category,
+        id_user: doc.id_user,
+        user: doc.user,
         document: doc.document ? doc.document.toString('base64') : null,
       }));
 
@@ -58,11 +86,18 @@ const documentController = {
     try {
       const { id } = req.params;
       const document = await Document.findByPk(id, {
-        include: {
-          model: Category,
-          as: 'category',
-          attributes: ['id_category', 'name'],
-        },
+        include: [
+          {
+            model: Category,
+            as: 'category',
+            attributes: ['id_category', 'name'],
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id_user', 'first_name', 'last_name'],
+          },
+        ],
       });
 
       if (!document) {
@@ -72,8 +107,10 @@ const documentController = {
       const result = {
         id_doc: document.id_doc,
         name: document.name,
-        id_cat: document.id_cat,
+        id_category: document.id_category,
         category: document.category,
+        id_user: document.id_user,
+        user: document.user,
         document: document.document ? document.document.toString('base64') : null,
       };
 
@@ -86,7 +123,7 @@ const documentController = {
   updateDocument: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, id_cat } = req.body;
+      const { name, id_category, id_user } = req.body;
 
       const document = await Document.findByPk(id);
 
@@ -94,10 +131,17 @@ const documentController = {
         return res.status(404).json({ message: 'Document not found' });
       }
 
-      if (id_cat) {
-        const category = await Category.findByPk(id_cat);
+      if (id_category) {
+        const category = await Category.findByPk(id_category);
         if (!category) {
           return res.status(404).json({ message: 'Category not found' });
+        }
+      }
+
+      if (id_user) {
+        const user = await User.findByPk(id_user);
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
         }
       }
 
@@ -106,7 +150,7 @@ const documentController = {
         updatedDocument = req.file.buffer;
       }
 
-      await document.update({ name, id_cat, document: updatedDocument });
+      await document.update({ name, id_category, id_user, document: updatedDocument });
       return res.status(200).json({ message: 'Document updated successfully', document });
     } catch (error) {
       return res.status(500).json({ message: 'Error updating document', error });
