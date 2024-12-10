@@ -37,7 +37,7 @@ const documentController = {
           return res.status(201).json({
             message: 'Document created successfully',
             document: {
-              id_doc: newDocument.id_doc,
+              id_document: newDocument.id_document,
               name: newDocument.name,
               id_category: newDocument.id_category,
               id_user: newDocument.id_user,
@@ -67,7 +67,7 @@ const documentController = {
       });
 
       const result = documents.map((doc) => ({
-        id_doc: doc.id_doc,
+        id_document: doc.id_document,
         name: doc.name,
         id_category: doc.id_category,
         category: doc.category,
@@ -105,7 +105,7 @@ const documentController = {
       }
 
       const result = {
-        id_doc: document.id_doc,
+        id_document: document.id_document,
         name: document.name,
         id_category: document.id_category,
         category: document.category,

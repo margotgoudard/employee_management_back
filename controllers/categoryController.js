@@ -20,6 +20,8 @@ const categoryController = {
   getCategories: async (req, res) => {
     try {
       const categories = await Category.findAll();
+      console.log(categories)
+
       return res.status(200).json(categories);
     } catch (error) {
       return res.status(500).json({ message: 'Error fetching categories', error });
@@ -28,9 +30,9 @@ const categoryController = {
 
   getCategoryById: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_category } = req.params;
 
-      const category = await Category.findByPk(id);
+      const category = await Category.findByPk(id_category);
 
       if (!category) {
         return res.status(404).json({ message: 'Category not found' });
@@ -44,10 +46,10 @@ const categoryController = {
 
   updateCategory: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_category } = req.params;
       const { name } = req.body;
 
-      const category = await Category.findByPk(id);
+      const category = await Category.findByPk(id_category);
 
       if (!category) {
         return res.status(404).json({ message: 'Category not found' });
@@ -62,9 +64,9 @@ const categoryController = {
 
   deleteCategory: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_category } = req.params;
 
-      const category = await Category.findByPk(id);
+      const category = await Category.findByPk(id_category);
 
       if (!category) {
         return res.status(404).json({ message: 'Category not found' });

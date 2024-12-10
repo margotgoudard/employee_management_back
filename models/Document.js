@@ -5,7 +5,7 @@ class Document extends Model {}
 
 Document.init(
   {
-    id_doc: {
+    id_document: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,

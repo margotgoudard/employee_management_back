@@ -51,10 +51,10 @@ const auditController = {
 
   updateAudit: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_audit } = req.params;
       const { table_name, action, old_values, new_values, id_user } = req.body;
 
-      const audit = await Audit.findByPk(id);
+      const audit = await Audit.findByPk(id_audit);
 
       if (!audit) {
         return res.status(404).json({ message: 'Audit not found' });
@@ -83,9 +83,9 @@ const auditController = {
 
   deleteAudit: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_audit } = req.params;
 
-      const audit = await Audit.findByPk(id);
+      const audit = await Audit.findByPk(id_audit);
 
       if (!audit) {
         return res.status(404).json({ message: 'Audit not found' });
