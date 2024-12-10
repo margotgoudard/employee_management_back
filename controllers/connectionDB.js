@@ -1,5 +1,5 @@
 const sequelize = require('../config/sequelize'); 
-const User = require('../models/User'); 
+const Relations = require('../models/Relations'); 
 
 const sequelizeAuthAndSync = async () => {
   try {

@@ -16,7 +16,10 @@ sequelizeAuthAndSync()
 
 // Routes
 const userRoutes = require('./routes/userRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+
 app.use('/api/users', userRoutes);
+app.use('/api/audits', auditRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
