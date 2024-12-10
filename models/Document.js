@@ -23,6 +23,7 @@ Document.init(
   {
     sequelize,
     modelName: 'Document',
+    tableName: 'Document',
   }
 );
 

@@ -19,6 +19,7 @@ Permission.init(
   {
     sequelize,
     modelName: 'Permission',
+    tableName: 'Permission',
   }
 );
 

@@ -19,6 +19,7 @@ Category.init(
   {
     sequelize,
     modelName: 'Category',
+    tableName: 'Category',
   }
 );
 
