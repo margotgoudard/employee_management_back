@@ -1,4 +1,5 @@
 const Permission = require('../models/Permission');
+const User = require('../models/User');
 
 const permissionController = {
 
@@ -76,6 +77,28 @@ const permissionController = {
       return res.status(500).json({ message: 'Error deleting permission', error });
     }
   },
+
+  getPermissionsByUserId: async (req, res) => {
+    try {
+      const { id_user } = req.params;
+  
+      const user = await User.findByPk(id_user, {
+        include: {
+          model: Permission,
+          through: { attributes: [] }, 
+        },
+      });
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      return res.status(200).json(user.Permissions);
+    } catch (error) {
+      return res.status(500).json({ message: 'Error fetching permissions for user', error });
+    }
+  },
+  
 };
 
 module.exports = permissionController;
