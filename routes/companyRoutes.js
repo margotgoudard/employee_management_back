@@ -8,5 +8,6 @@ router.get('', companyController.getCompanies);
 router.get('/:id_company', companyController.getCompanyById);
 router.put('/:id_company', upload.single('logo'), companyController.updateCompany); 
 router.delete('/:id_company', companyController.deleteCompany);
+router.get('/users/:id_company', companyController.getUsersByCompanyId);
 
 module.exports = router;
