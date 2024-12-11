@@ -117,4 +117,4 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-SELECT create_timetables_for_all_users();
+-- SELECT create_timetables_for_all_users();
