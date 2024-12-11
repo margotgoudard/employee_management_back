@@ -29,7 +29,14 @@ DailyTimetableSheet.init(
       allowNull: false,
     },
     status: {
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM(
+        'Travaillé',
+        'Week-end',
+        'Férié',
+        'Congés payés',
+        'Arrêt maladie',
+        'Congés sans solde'
+      ),
       allowNull: false,
     },
     comment: {

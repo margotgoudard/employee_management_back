@@ -20,9 +20,6 @@ const auditRoutes = require('./routes/auditRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const feeCategoryRoutes = require('./routes/feeCategoryRoutes')
 const placeCategoryRoutes = require('./routes/placeCategoryRoutes')
-const placeRoutes = require('./routes/placeRoutes')
-
-
 const expenseReportRoutes = require('./routes/expenseReportRoutes.js')
 const dailyTimetableSheetRoutes = require('./routes/dailyTimetableRoutes.js')
 const timeSlotRoutes = require('./routes/timeSlotRoutes.js')
@@ -34,9 +31,6 @@ app.use('/api/audits', auditRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/feeCategories', feeCategoryRoutes);
 app.use('/api/placeCategories', placeCategoryRoutes);
-app.use('/api/places', placeRoutes);
-
-
 app.use('/api/expenseReports', expenseReportRoutes);
 app.use('/api/dailyTimetableSheets', dailyTimetableSheetRoutes);
 app.use('/api/timeSlots', timeSlotRoutes);

@@ -1,11 +1,34 @@
 const TimeSlot = require('../models/TimeSlot');
 
 const timeSlotController = {
-
   createTimeSlot: async (req, res) => {
     try {
-      const { id_daily_time, id_place_category, start, end } = req.body;
-      const timeSlot = await TimeSlot.create({ id_daily_time, id_place_category, start, end });
+      const { 
+        id_daily_time, 
+        id_place_category, 
+        start, 
+        end, 
+        num_address, 
+        street_address, 
+        city_address, 
+        area_code_address, 
+        region_address, 
+        country_address 
+      } = req.body;
+
+      const timeSlot = await TimeSlot.create({ 
+        id_daily_time, 
+        id_place_category, 
+        start, 
+        end, 
+        num_address, 
+        street_address, 
+        city_address, 
+        area_code_address, 
+        region_address, 
+        country_address 
+      });
+
       return res.status(201).json({ message: 'TimeSlot created successfully', timeSlot });
     } catch (error) {
       return res.status(500).json({ message: 'Error creating TimeSlot', error });
@@ -50,12 +73,37 @@ const timeSlotController = {
   updateTimeSlot: async (req, res) => {
     try {
       const { id } = req.params;
-      const { id_daily_time, id_place_category, start, end } = req.body;
+      const { 
+        id_daily_time, 
+        id_place_category, 
+        start, 
+        end, 
+        num_address, 
+        street_address, 
+        city_address, 
+        area_code_address, 
+        region_address, 
+        country_address 
+      } = req.body;
+
       const timeSlot = await TimeSlot.findByPk(id);
       if (!timeSlot) {
         return res.status(404).json({ message: 'TimeSlot not found' });
       }
-      await timeSlot.update({ id_daily_time, id_place_category, start, end });
+
+      await timeSlot.update({ 
+        id_daily_time, 
+        id_place_category, 
+        start, 
+        end, 
+        num_address, 
+        street_address, 
+        city_address, 
+        area_code_address, 
+        region_address, 
+        country_address 
+      });
+
       return res.status(200).json({ message: 'TimeSlot updated successfully', timeSlot });
     } catch (error) {
       return res.status(500).json({ message: 'Error updating TimeSlot', error });

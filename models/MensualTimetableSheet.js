@@ -37,7 +37,11 @@ MensualTimetableSheet.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM(
+        'À compléter',
+        'En attente d\'approbation',
+        'Acceptée'
+      ),
       allowNull: false,
     },
   },

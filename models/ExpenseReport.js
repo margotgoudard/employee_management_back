@@ -43,6 +43,7 @@ ExpenseReport.init(
   {
     sequelize,
     modelName: 'ExpenseReport',
+    tableName: 'expense_report'
   }
 );
 
