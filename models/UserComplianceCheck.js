@@ -1,31 +1,19 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/sequelize');
 
-class Audit extends Model {}
+class UserComplianceCheck extends Model {}
 
-Audit.init(
+UserComplianceCheck.init(
   {
-    id_audit: {
+    id_user_compliance_check: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
     },
-    table_name: {
-      type: DataTypes.STRING(255),
+    id_compliance_check: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-    },
-    action: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-    },
-    old_values: {
-      type: DataTypes.JSON,
-      allowNull: true,
-    },
-    new_values: {
-      type: DataTypes.JSON,
-      allowNull: true,
     },
     id_user: {
       type: DataTypes.INTEGER,
@@ -35,12 +23,16 @@ Audit.init(
         key: 'id_user',
       },
     },
+    parameters: {
+     type: DataTypes.JSON,
+     allowNull: true, 
+   },
   },
   {
     sequelize,
-    modelName: 'Audit',
-    tableName: 'audit',
+    modelName: 'UserComplianceCheck',
+    tableName: 'user_compliance_check',
   }
 );
 
-module.exports = Audit;
+module.exports = UserComplianceCheck;

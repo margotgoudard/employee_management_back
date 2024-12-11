@@ -1,8 +1,8 @@
 const Company = require('../models/Company');
+const User = require('../models/User');
 
 const companyController = {
-
-    createCompany: async (req, res) => {
+  createCompany: async (req, res) => {
     try {
       const {
         name,
@@ -30,7 +30,19 @@ const companyController = {
         logo,
       });
 
-      return res.status(201).json({ message: 'Company created successfully', company });
+      const companyResponse = {
+        id_company: company.id_company,
+        name: company.name,
+        num_address: company.num_address,
+        street_address: company.street_address,
+        city_address: company.city_address,
+        area_code_address: company.area_code_address,
+        region_address: company.region_address,
+        country_address: company.country_address,
+        logo: company.logo ? company.logo.toString('base64') : null,
+      };
+
+      return res.status(201).json({ message: 'Company created successfully', company: companyResponse });
     } catch (error) {
       return res.status(500).json({ message: 'Error creating company', error });
     }
@@ -40,19 +52,17 @@ const companyController = {
     try {
       const companies = await Company.findAll();
 
-      const result = companies.map((company) => {
-        return {
-          id_company: company.id_company,
-          name: company.name,
-          num_address: company.num_address,
-          street_address: company.street_address,
-          city_address: company.city_address,
-          area_code_address: company.area_code_address,
-          region_address: company.region_address,
-          country_address: company.country_address,
-          logo: company.logo ? company.logo.toString('base64') : null,
-        };
-      });
+      const result = companies.map((company) => ({
+        id_company: company.id_company,
+        name: company.name,
+        num_address: company.num_address,
+        street_address: company.street_address,
+        city_address: company.city_address,
+        area_code_address: company.area_code_address,
+        region_address: company.region_address,
+        country_address: company.country_address,
+        logo: company.logo ? company.logo.toString('base64') : null,
+      }));
 
       return res.status(200).json(result);
     } catch (error) {
@@ -62,8 +72,8 @@ const companyController = {
 
   getCompanyById: async (req, res) => {
     try {
-      const { id } = req.params;
-      const company = await Company.findByPk(id);
+      const { id_company } = req.params;
+      const company = await Company.findByPk(id_company);
 
       if (!company) {
         return res.status(404).json({ message: 'Company not found' });
@@ -89,7 +99,7 @@ const companyController = {
 
   updateCompany: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_company } = req.params;
       const {
         name,
         num_address,
@@ -100,13 +110,13 @@ const companyController = {
         country_address,
       } = req.body;
 
-      const company = await Company.findByPk(id);
+      const company = await Company.findByPk(id_company);
 
       if (!company) {
         return res.status(404).json({ message: 'Company not found' });
       }
 
-      let logo = company.logo; 
+      let logo = company.logo;
       if (req.file) {
         logo = req.file.buffer;
       }
@@ -122,7 +132,19 @@ const companyController = {
         logo,
       });
 
-      return res.status(200).json({ message: 'Company updated successfully', company });
+      const companyResponse = {
+        id_company: company.id_company,
+        name: company.name,
+        num_address: company.num_address,
+        street_address: company.street_address,
+        city_address: company.city_address,
+        area_code_address: company.area_code_address,
+        region_address: company.region_address,
+        country_address: company.country_address,
+        logo: company.logo ? company.logo.toString('base64') : null,
+      };
+
+      return res.status(200).json({ message: 'Company updated successfully', company: companyResponse });
     } catch (error) {
       return res.status(500).json({ message: 'Error updating company', error });
     }
@@ -130,9 +152,9 @@ const companyController = {
 
   deleteCompany: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id_company } = req.params;
 
-      const company = await Company.findByPk(id);
+      const company = await Company.findByPk(id_company);
 
       if (!company) {
         return res.status(404).json({ message: 'Company not found' });
@@ -144,6 +166,27 @@ const companyController = {
       return res.status(500).json({ message: 'Error deleting company', error });
     }
   },
+
+  getUsersByCompanyId: async (req, res) => {
+    try {
+      const { id_company } = req.params;
+      const company = await Company.findByPk(id_company, {
+        include: {
+          model: User,
+          through: { attributes: [] },
+        },
+      });
+      console.log(company)
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+  
+      return res.status(200).json(company.Users); 
+    } catch (error) {
+      return res.status(500).json({ message: 'Error fetching users by company', error });
+    }
+  },
+
 };
 
 module.exports = companyController;

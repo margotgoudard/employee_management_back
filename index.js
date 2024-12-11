@@ -25,6 +25,9 @@ const dailyTimetableSheetRoutes = require('./routes/dailyTimetableRoutes.js')
 const timeSlotRoutes = require('./routes/timeSlotRoutes.js')
 const mensualTimetableSheetRoutes = require('./routes/mensualTimetableRoutes.js')
 
+const permissionRoutes = require('./routes/permissionRoutes');
+const documentCategoryRoutes = require('./routes/documentCategoryRoutes');
+const documentRoutes = require('./routes/documentRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/audits', auditRoutes);
@@ -36,6 +39,9 @@ app.use('/api/dailyTimetableSheets', dailyTimetableSheetRoutes);
 app.use('/api/timeSlots', timeSlotRoutes);
 app.use('/api/mensualTimetableSheets', mensualTimetableSheetRoutes);
 
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/document-categories', documentCategoryRoutes);
+app.use('/api/documents', documentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

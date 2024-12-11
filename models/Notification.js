@@ -1,34 +1,27 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/sequelize');
 
-class Audit extends Model {}
+class Notification extends Model {}
 
-Audit.init(
+Notification.init(
   {
-    id_audit: {
+    id_notification: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
     },
-    table_name: {
-      type: DataTypes.STRING(255),
+    content: {
+      type: DataTypes.STRING(500),
       allowNull: false,
     },
-    action: {
-      type: DataTypes.STRING(255),
+    viewed: {
+      type: DataTypes.BOOLEAN, 
       allowNull: false,
-    },
-    old_values: {
-      type: DataTypes.JSON,
-      allowNull: true,
-    },
-    new_values: {
-      type: DataTypes.JSON,
-      allowNull: true,
+      defaultValue: false,
     },
     id_user: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER, 
       allowNull: false,
       references: {
         model: 'user',
@@ -38,9 +31,9 @@ Audit.init(
   },
   {
     sequelize,
-    modelName: 'Audit',
-    tableName: 'audit',
+    modelName: 'Notification',
+    tableName: 'notification',
   }
 );
 
-module.exports = Audit;
+module.exports = Notification;
