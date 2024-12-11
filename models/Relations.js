@@ -3,6 +3,13 @@ const { Sequelize } = require('sequelize');
 const Audit = require('./Audit.js');
 const User = require('./User.js');
 const Company = require('./Company.js');
+const FeeCategory = require('./FeeCategory.js');
+const PlaceCategory = require('./PlaceCategory.js');
+const ExpenseReport = require('./ExpenseReport.js');
+const DailyTimetableSheet = require('./DailyTimetableSheet.js');
+const TimeSlot = require('./TimeSlot.js');
+const MensualTimetableSheet = require('./MensualTimetableSheet.js');
+
 const Permission = require('./Permission.js');
 const DocumentCategory = require('./DocumentCategory.js');
 const Document = require('./Document.js');
@@ -19,6 +26,35 @@ User.hasMany(Audit, { foreignKey: 'id_user', as: 'audits' });
 User.belongsToMany(Company, { through: 'user_company', foreignKey: 'id_user' });
 Company.belongsToMany(User, { through: 'user_company', foreignKey: 'id_company' });
 
+
+
+// Relations TimeSlot et DailyTimeTableSheet
+TimeSlot.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_time', as: 'dailyTime' });
+DailyTimetableSheet.hasMany(TimeSlot, { foreignKey: 'id_daily_time', as: 'timeSlots' });
+
+// Relations TimeSlot et PlaceCategory
+TimeSlot.belongsTo(PlaceCategory, { foreignKey: 'id_place_category', as: 'placeCategory' });
+PlaceCategory.hasMany(TimeSlot, { foreignKey: 'id_place_category', as: 'timeSlots' });
+
+// Relations DailyTimetableSheet et ExpenseReport
+DailyTimetableSheet.hasMany(ExpenseReport, { foreignKey: 'id_daily_timetable', as: 'expenseReports' });
+ExpenseReport.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_timetable', as: 'dailyTimetable' });
+
+// Relations entre MensualTimetableSheet et DailyTimetableSheet
+MensualTimetableSheet.hasMany(DailyTimetableSheet, { foreignKey: 'id_timetable', as: 'dailyTimetableList' });
+DailyTimetableSheet.belongsTo(MensualTimetableSheet, { foreignKey: 'id_timetable', as: 'mensualTimetable' });
+
+// Relations MensualTimetableSheet et User
+MensualTimetableSheet.belongsTo(User, { foreignKey: 'id_user', as: 'user' });  
+MensualTimetableSheet.hasMany(DailyTimetableSheet, { foreignKey: 'id_timetable', as: 'dailyTimetables' });  
+
+// Realtions FeeCategory et ExpenseReport
+FeeCategory.hasMany(ExpenseReport, { foreignKey: 'id_fee_category', as: 'expenseReports' });
+ExpenseReport.belongsTo(FeeCategory, { foreignKey: 'id_fee_category', as: 'feeCategory' });
+
+
+
+module.exports = {User, Audit, FeeCategory, PlaceCategory, ExpenseReport, DailyTimetableSheet, MensualTimetableSheet, TimeSlot}
 User.belongsToMany(Permission, { through: 'user_permission', foreignKey: 'id_user' });
 Permission.belongsToMany(User, { through: 'user_permission', foreignKey: 'id_permission' });
 
@@ -52,4 +88,24 @@ User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'managed' });
 Subordination.belongsTo(Department, { foreignKey: 'id_department', as: 'department' });
 Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinations' });
 
-module.exports = {User, Audit, Company, Permission, DocumentCategory, Document, UserComplianceCheck, ComplianceCheck, ComplianceCheckParameter, Department, Notification, Subordination};
+
+module.exports = {
+    User,
+    Audit,
+    Company,
+    FeeCategory,
+    PlaceCategory,
+    ExpenseReport,
+    DailyTimetableSheet,
+    MensualTimetableSheet,
+    TimeSlot,
+    Permission,
+    DocumentCategory,
+    Document,
+    ComplianceCheck,
+    UserComplianceCheck,
+    ComplianceCheckParameter,
+    Department,
+    Notification,
+    Subordination,
+  };
