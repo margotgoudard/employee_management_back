@@ -24,10 +24,6 @@ DailyTimetableSheet.init(
       type: DataTypes.DATE,
       allowNull: false,
     },
-    year: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
     status: {
       type: DataTypes.ENUM(
         'Travaillé',

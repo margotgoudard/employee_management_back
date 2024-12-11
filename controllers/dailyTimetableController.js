@@ -4,7 +4,7 @@ const dailyTimetableController = {
 
   createDailyTimetable: async (req, res) => {
     try {
-      const { id_timetable, day, year, status, comment, on_call_duty } = req.body;
+      const { id_timetable, day, status, comment, on_call_duty } = req.body;
       const dailyTimetable = await DailyTimetableSheet.create({
         id_timetable, day, year, status, comment, on_call_duty
       });
@@ -51,7 +51,7 @@ const dailyTimetableController = {
   updateDailyTimetable: async (req, res) => {
     try {
       const { id } = req.params;
-      const { id_timetable, day, year, status, comment, on_call_duty } = req.body;
+      const { id_timetable, day, status, comment, on_call_duty } = req.body;
       const dailyTimetable = await DailyTimetableSheet.findByPk(id);
       if (!dailyTimetable) {
         return res.status(404).json({ message: 'DailyTimetableSheet not found' });

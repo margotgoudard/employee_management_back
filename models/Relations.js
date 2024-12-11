@@ -23,10 +23,8 @@ const Subordination = require('./Subordination.js');
 Audit.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
 User.hasMany(Audit, { foreignKey: 'id_user', as: 'audits' });
 
-User.belongsToMany(Company, { through: 'user_company', foreignKey: 'id_user' });
-Company.belongsToMany(User, { through: 'user_company', foreignKey: 'id_company' });
-
-
+// User.belongsToMany(Company, { through: 'user_company', foreignKey: 'id_user' });
+// Company.belongsToMany(User, { through: 'user_company', foreignKey: 'id_company' });
 
 // Relations TimeSlot et DailyTimeTableSheet
 TimeSlot.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_time', as: 'dailyTime' });
@@ -52,9 +50,6 @@ MensualTimetableSheet.hasMany(DailyTimetableSheet, { foreignKey: 'id_timetable',
 FeeCategory.hasMany(ExpenseReport, { foreignKey: 'id_fee_category', as: 'expenseReports' });
 ExpenseReport.belongsTo(FeeCategory, { foreignKey: 'id_fee_category', as: 'feeCategory' });
 
-
-
-module.exports = {User, Audit, FeeCategory, PlaceCategory, ExpenseReport, DailyTimetableSheet, MensualTimetableSheet, TimeSlot}
 User.belongsToMany(Permission, { through: 'user_permission', foreignKey: 'id_user' });
 Permission.belongsToMany(User, { through: 'user_permission', foreignKey: 'id_permission' });
 
@@ -87,7 +82,6 @@ User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'managed' });
 
 Subordination.belongsTo(Department, { foreignKey: 'id_department', as: 'department' });
 Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinations' });
-
 
 module.exports = {
     User,

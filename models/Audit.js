@@ -20,11 +20,11 @@ Audit.init(
       allowNull: false,
     },
     old_values: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       allowNull: true,
     },
     new_values: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       allowNull: true,
     },
     id_user: {

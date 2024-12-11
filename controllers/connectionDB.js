@@ -1,6 +1,7 @@
 const sequelize = require('../config/sequelize');
-const FeeCategory = require('../models/FeeCategory'); 
-const PlaceCategory = require('../models/PlaceCategory')
+const Relations = require('../models/Relations');
+const FeeCategory = require('../models/FeeCategory');
+const PlaceCategory = require('../models/PlaceCategory');
 
 const sequelizeAuthAndSync = async () => {
   try {
@@ -11,8 +12,8 @@ const sequelizeAuthAndSync = async () => {
     await sequelize.sync({ force: false }); 
     console.log("All models were synchronized successfully.");
 
-    await insertFeeCategories(); 
-    await insertPlaceCategories();
+    // await insertFeeCategories(); 
+    // await insertPlaceCategories();
 
   } catch (err) {
     console.error("Error: " + err);

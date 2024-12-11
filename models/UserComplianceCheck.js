@@ -24,7 +24,7 @@ UserComplianceCheck.init(
       },
     },
     parameters: {
-     type: DataTypes.JSON,
+     type: DataTypes.JSONB,
      allowNull: true, 
    },
   },
