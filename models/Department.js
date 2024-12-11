@@ -19,7 +19,7 @@ Department.init(
       type: DataTypes.INTEGER,
       allowNull: true, 
       references: {
-        model: 'Department',
+        model: 'department',
         key: 'id_department',
       },
     },
@@ -27,7 +27,7 @@ Department.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Company',
+        model: 'company',
         key: 'id_company',
       },
     },

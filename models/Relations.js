@@ -16,11 +16,11 @@ const Subordination = require('./Subordination.js');
 Audit.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
 User.hasMany(Audit, { foreignKey: 'id_user', as: 'audits' });
 
-User.belongsToMany(Company, { through: 'User_Company', foreignKey: 'id_user' });
-Company.belongsToMany(User, { through: 'User_Company', foreignKey: 'id_company' });
+User.belongsToMany(Company, { through: 'user_company', foreignKey: 'id_user' });
+Company.belongsToMany(User, { through: 'user_company', foreignKey: 'id_company' });
 
-User.belongsToMany(Permission, { through: 'User_Permission', foreignKey: 'id_user' });
-Permission.belongsToMany(User, { through: 'User_Permission', foreignKey: 'id_permission' });
+User.belongsToMany(Permission, { through: 'user_permission', foreignKey: 'id_user' });
+Permission.belongsToMany(User, { through: 'user_permission', foreignKey: 'id_permission' });
 
 Document.belongsTo(DocumentCategory, { foreignKey: 'id_document_category', as: 'document_category' });
 DocumentCategory.hasMany(Document, { foreignKey: 'id_document_category', as: 'documents' });
