@@ -558,7 +558,7 @@ CREATE TABLE public.mensual_timetable_sheet (
     month integer NOT NULL,
     year integer NOT NULL,
     comment text,
-    commision double precision,
+    commission double precision,
     status public.enum_mensual_timetable_sheet_status NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL

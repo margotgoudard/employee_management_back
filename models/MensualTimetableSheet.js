@@ -32,7 +32,7 @@ MensualTimetableSheet.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    commision: {
+    commission: {
       type: DataTypes.FLOAT,
       allowNull: true,
     },

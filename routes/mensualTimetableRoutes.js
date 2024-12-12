@@ -11,6 +11,7 @@ router.delete('/:id', mensualTimetableController.deleteMensualTimetable);
 // Grouped json routes
 // les plages horaires de tous les jours pour un mois donné (id_timetable)
 router.get('/all-timeslot-day-month/:id', mensualTimetableController.getMensualDailyTimeSlot);
+router.get('/all-details-month/:id', mensualTimetableController.getMensualTimetableWithDetails);
 
 
 module.exports = router;
