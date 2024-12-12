@@ -43,6 +43,10 @@ DailyTimetableSheet.init(
       type: DataTypes.BOOLEAN,
       allowNull: true,
     },
+    is_completed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+    },
   },
   {
     sequelize,
