@@ -2,6 +2,19 @@ const DailyTimetableSheet = require('../models/DailyTimetableSheet');
 const TimeSlot = require('../models/TimeSlot');
 const sequelize = require('../config/sequelize')
 
+// Fonction pour calculer le nombre d'heures travaillées sur un jour
+const calculateWorkedHours = (timeSlots) => {
+  let totalWorkedSeconds = 0;
+  
+  timeSlots.forEach(slot => {
+    const startTime = new Date(`1970-01-01T${slot.start}Z`);
+    const endTime = new Date(`1970-01-01T${slot.end}Z`);
+    totalWorkedSeconds += (endTime - startTime) / 1000;
+  });
+  return totalWorkedSeconds / 3600; 
+};
+
+
 const dailyTimetableController = {
   
   createDailyTimetable: async (req, res) => {
@@ -133,16 +146,12 @@ const dailyTimetableController = {
     }
   },
 
-
   getTotalWorkedHours: async (req, res) => {
     try {
-      const { id } = req.params; // L'id du DailyTimetableSheet passé dans l'URL
-
+      const { id } = req.params; 
       if (!id) {
         return res.status(400).json({ message: 'Daily Timetable ID is required' });
       }
-
-      // Vérifier si le statut de la journée est "travaillé"
       const dailyTimetable = await DailyTimetableSheet.findByPk(id);
       if (!dailyTimetable) {
         return res.status(404).json({ message: 'Daily Timetable not found' });
@@ -152,27 +161,16 @@ const dailyTimetableController = {
         return res.status(400).json({ message: 'The day is not worked' });
       }
 
-      // Calculer la durée totale en heures
       const timeSlots = await TimeSlot.findAll({
         where: {
           id_daily_time: id,
         },
       });
 
-      // Vérifier s'il y a des timeSlots et calculer la durée totale
       if (!timeSlots.length) {
         return res.status(200).json({ message: 'No worked hours found', totalWorkedHours: 0 });
       }
-
-      let totalWorkedSeconds = 0;
-      timeSlots.forEach(slot => {
-        const startTime = new Date(`1970-01-01T${slot.start}Z`);
-        const endTime = new Date(`1970-01-01T${slot.end}Z`);
-        totalWorkedSeconds += (endTime - startTime) / 1000; // Calcul de la différence en secondes
-      });
-
-      // Convertir en heures
-      const totalWorkedHours = totalWorkedSeconds / 3600; // Convertir en heures
+      const totalWorkedHours = calculateWorkedHours(timeSlots);
 
       return res.status(200).json({
         message: `Total worked hours: ${totalWorkedHours.toFixed(2)} hours`,
@@ -187,4 +185,7 @@ const dailyTimetableController = {
 
 };
 
+
 module.exports = dailyTimetableController;
+module.exports.calculateWorkedHours = calculateWorkedHours;
+
