@@ -32,12 +32,12 @@ const documentRoutes = require('./routes/documentRoutes');
 app.use('/api/users', userRoutes);
 app.use('/api/audits', auditRoutes);
 app.use('/api/companies', companyRoutes);
-app.use('/api/feeCategories', feeCategoryRoutes);
-app.use('/api/placeCategories', placeCategoryRoutes);
-app.use('/api/expenseReports', expenseReportRoutes);
-app.use('/api/dailyTimetableSheets', dailyTimetableSheetRoutes);
-app.use('/api/timeSlots', timeSlotRoutes);
-app.use('/api/mensualTimetableSheets', mensualTimetableSheetRoutes);
+app.use('/api/fee-categories', feeCategoryRoutes);
+app.use('/api/place-categories', placeCategoryRoutes);
+app.use('/api/expense-reports', expenseReportRoutes);
+app.use('/api/daily-timetable-sheets', dailyTimetableSheetRoutes);
+app.use('/api/time-slots', timeSlotRoutes);
+app.use('/api/mensual-timetable-sheets', mensualTimetableSheetRoutes);
 
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/document-categories', documentCategoryRoutes);
