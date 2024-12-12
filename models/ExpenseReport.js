@@ -30,8 +30,12 @@ ExpenseReport.init(
       type: DataTypes.FLOAT, 
       allowNull: false,
     },
-    document: {
+    document_name: {
       type: DataTypes.STRING,
+    },
+    document: {
+      type: DataTypes.BLOB('long'), 
+      allowNull: false,
     },
     client: {
       type: DataTypes.STRING, 
