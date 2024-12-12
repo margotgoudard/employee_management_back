@@ -9,4 +9,7 @@ router.get('/:id', dailyTimetableController.getDailyTimetableById);
 router.put('/:id', dailyTimetableController.updateDailyTimetable);
 router.delete('/:id', dailyTimetableController.deleteDailyTimetable);
 
+// Calculated route
+router.get('/number-worked/:id', dailyTimetableController.getTotalWorkedHours);
+
 module.exports = router;

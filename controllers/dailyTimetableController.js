@@ -1,4 +1,6 @@
 const DailyTimetableSheet = require('../models/DailyTimetableSheet');
+const TimeSlot = require('../models/TimeSlot');
+const sequelize = require('../config/sequelize')
 
 const dailyTimetableController = {
   
@@ -130,6 +132,59 @@ const dailyTimetableController = {
       });
     }
   },
+
+
+  getTotalWorkedHours: async (req, res) => {
+    try {
+      const { id } = req.params; // L'id du DailyTimetableSheet passé dans l'URL
+
+      if (!id) {
+        return res.status(400).json({ message: 'Daily Timetable ID is required' });
+      }
+
+      // Vérifier si le statut de la journée est "travaillé"
+      const dailyTimetable = await DailyTimetableSheet.findByPk(id);
+      if (!dailyTimetable) {
+        return res.status(404).json({ message: 'Daily Timetable not found' });
+      }
+
+      if (dailyTimetable.status !== 'Travaillé') {
+        return res.status(400).json({ message: 'The day is not worked' });
+      }
+
+      // Calculer la durée totale en heures
+      const timeSlots = await TimeSlot.findAll({
+        where: {
+          id_daily_time: id,
+        },
+      });
+
+      // Vérifier s'il y a des timeSlots et calculer la durée totale
+      if (!timeSlots.length) {
+        return res.status(200).json({ message: 'No worked hours found', totalWorkedHours: 0 });
+      }
+
+      let totalWorkedSeconds = 0;
+      timeSlots.forEach(slot => {
+        const startTime = new Date(`1970-01-01T${slot.start}Z`);
+        const endTime = new Date(`1970-01-01T${slot.end}Z`);
+        totalWorkedSeconds += (endTime - startTime) / 1000; // Calcul de la différence en secondes
+      });
+
+      // Convertir en heures
+      const totalWorkedHours = totalWorkedSeconds / 3600; // Convertir en heures
+
+      return res.status(200).json({
+        message: `Total worked hours: ${totalWorkedHours.toFixed(2)} hours`,
+        totalWorkedHours,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Error calculating worked hours', error });
+    }
+  },
+
+
 };
 
 module.exports = dailyTimetableController;
