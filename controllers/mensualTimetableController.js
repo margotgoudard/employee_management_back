@@ -1,4 +1,6 @@
 const MensualTimetableSheet = require('../models/MensualTimetableSheet');
+const DailyTimetableSheet = require('../models/DailyTimetableSheet'); 
+const TimeSlot = require('../models/TimeSlot');
 
 const mensualTimetableController = {
 
@@ -82,6 +84,43 @@ const mensualTimetableController = {
       return res.status(500).json({ message: 'Error deleting MensualTimetableSheet', error });
     }
   },
+
+
+  getMensualDailyTimeSlot: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: 'Timetable ID is required' });
+      }
+  
+      // Vérifier si l'utilisateur a accès à ce MensualTimetable
+      const mensualTimetable = await MensualTimetableSheet.findOne({
+        where: { id_timetable: id },
+        include: [
+          {
+            model: DailyTimetableSheet,
+            as: 'dailyTimetables',
+            include: [
+              {
+                model: TimeSlot,
+                as: 'timeSlots',
+              },
+            ],
+          },
+        ],
+      });
+  
+      if (!mensualTimetable) {
+        return res.status(404).json({ message: 'Mensual Timetable not found' });
+      }
+  
+      return res.status(200).json(mensualTimetable);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      return res.status(500).json({ message: 'Error fetching data', error });
+    }
+  },
+  
 };
 
 module.exports = mensualTimetableController;
