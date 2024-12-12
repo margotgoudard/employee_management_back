@@ -303,6 +303,7 @@ CREATE TABLE public.daily_timetable_sheet (
     status public.enum_daily_timetable_sheet_status NOT NULL,
     comment text,
     on_call_duty boolean,
+    is_completed boolean,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL
 );
