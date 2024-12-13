@@ -431,6 +431,7 @@ CREATE TABLE public.daily_timetable_sheet (
     status public.enum_daily_timetable_sheet_status NOT NULL,
     comment text,
     on_call_duty boolean,
+    is_completed boolean,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL
 );
@@ -598,7 +599,8 @@ CREATE TABLE public.expense_report (
     id_fee_category integer NOT NULL,
     id_daily_timetable integer NOT NULL,
     amount double precision NOT NULL,
-    document character varying(255),
+    document_name character varying(255),
+    document bytea,
     client character varying(255),
     motive character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
@@ -684,7 +686,7 @@ CREATE TABLE public.mensual_timetable_sheet (
     month integer NOT NULL,
     year integer NOT NULL,
     comment text,
-    commision double precision,
+    commission double precision,
     status public.enum_mensual_timetable_sheet_status NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL

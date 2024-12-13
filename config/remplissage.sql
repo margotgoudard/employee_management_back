@@ -86,8 +86,8 @@ BEGIN
         END IF;
 
         -- Insérer le daily timetable sheet
-        INSERT INTO daily_timetable_sheet (id_timetable, day, status, on_call_duty, "createdAt", "updatedAt")
-        VALUES (new_timetable_id, current_day, status::enum_daily_timetable_sheet_status, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO daily_timetable_sheet (id_timetable, day, status, on_call_duty,is_completed, "createdAt", "updatedAt")
+        VALUES (new_timetable_id, current_day, status::enum_daily_timetable_sheet_status, FALSE,FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id_daily_timetable INTO daily_timetable_id;
 
         -- Si le statut est 'Travaillé', insérer deux timeslots par défaut

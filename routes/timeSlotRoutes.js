@@ -9,4 +9,5 @@ router.get('/:id', timeSlotController.getTimeSlotById);
 router.put('/:id', timeSlotController.updateTimeSlot);
 router.delete('/:id', timeSlotController.deleteTimeSlot);
 
+
 module.exports = router;
