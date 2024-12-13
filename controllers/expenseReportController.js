@@ -1,5 +1,6 @@
 const ExpenseReport = require('../models/ExpenseReport');
-
+const DailyTimetableSheet = require('../models/DailyTimetableSheet');
+const FeeCategory = require('../models/FeeCategory');
 
 const expenseReportController = {
 
@@ -27,8 +28,8 @@ const expenseReportController = {
         motive,
       });
 
-      // Conversion du document en base64 pour l'inclure dans la réponse
-      const base64Document = document.toString('base64');
+      // Conversion du document en base64 pour la réponse
+      const base64Document = Buffer.from(document).toString('base64');
 
       return res.status(201).json({
         message: 'ExpenseReport created successfully',
@@ -63,13 +64,13 @@ const expenseReportController = {
         return res.status(404).json({ message: 'No ExpenseReports found for the given DailyTimetable ID' });
       }
 
-      // Convertir les documents en base64 avant de les envoyer dans la réponse
+      // Convertir les documents en base64 avant de les envoyer
       const result = expenseReports.map((expenseReport) => ({
         id_expense_report: expenseReport.id_expense_report,
         id_daily_timetable: expenseReport.id_daily_timetable,
         id_fee_category: expenseReport.id_fee_category,
         amount: expenseReport.amount,
-        document: expenseReport.document ? expenseReport.document.toString('base64') : null, // Conversion en base64
+        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null, // Conversion en base64
         client: expenseReport.client,
         motive: expenseReport.motive,
       }));
@@ -87,13 +88,16 @@ const expenseReportController = {
       if (!expenseReport) {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
+      const base64Document = expenseReport.document
+        ? Buffer.from(expenseReport.document).toString('base64')
+        : null;
 
       const result = {
         id_expense_report: expenseReport.id_expense_report,
         id_daily_timetable: expenseReport.id_daily_timetable,
         id_fee_category: expenseReport.id_fee_category,
         amount: expenseReport.amount,
-        document: expenseReport.document ? expenseReport.document.toString('base64') : null, // Conversion en base64
+        document: base64Document,
         client: expenseReport.client,
         motive: expenseReport.motive,
       };
@@ -114,10 +118,9 @@ const expenseReportController = {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
 
-      
-      let updatedDocument = expenseReport.document; 
+      let updatedDocument = expenseReport.document;
       if (req.file) {
-        updatedDocument = req.file.buffer; 
+        updatedDocument = req.file.buffer;
       }
 
       await expenseReport.update({
@@ -129,7 +132,7 @@ const expenseReportController = {
       });
 
       // Conversion du document mis à jour en base64
-      const base64Document = updatedDocument ? updatedDocument.toString('base64') : null;
+      const base64Document = updatedDocument ? Buffer.from(updatedDocument).toString('base64') : null;
 
       return res.status(200).json({
         message: 'ExpenseReport updated successfully',
@@ -159,6 +162,62 @@ const expenseReportController = {
       return res.status(200).json({ message: 'ExpenseReport deleted successfully' });
     } catch (error) {
       return res.status(500).json({ message: 'Error deleting ExpenseReport', error });
+    }
+  },
+
+  getExpenseReportsByMensualTimetable: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: 'MensualTimetable ID is required' });
+      }
+
+      // Étape 1 : Récupérer les daily timetables associés au MensualTimetable ID
+      const dailyTimetables = await DailyTimetableSheet.findAll({
+        where: { id_timetable: id },
+      });
+      if (!dailyTimetables || dailyTimetables.length === 0) {
+        return res.status(404).json({
+          message: 'No DailyTimetables found for the given MensualTimetable ID',
+        });
+      }
+
+      // Étape 2 : Récupérer les notes de frais associées
+      const dailyTimetableIds = dailyTimetables.map((dt) => dt.id_daily_timetable);
+
+      const expenseReports = await ExpenseReport.findAll({
+        where: { id_daily_timetable: dailyTimetableIds },
+        include: [
+          {
+            model: FeeCategory,
+            as: 'feeCategory',
+          },
+        ],
+      });
+
+      if (!expenseReports || expenseReports.length === 0) {
+        return res.status(404).json({
+          message: 'No ExpenseReports found for the given MensualTimetable ID',
+        });
+      }
+
+      // Étape 3 : Convertir les documents en base64 et retourner les résultats
+      const result = expenseReports.map((expenseReport) => ({
+        id_expense_report: expenseReport.id_expense_report,
+        id_daily_timetable: expenseReport.id_daily_timetable,
+        id_fee_category: expenseReport.id_fee_category,
+        amount: expenseReport.amount,
+        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null, // Conversion en base64
+        client: expenseReport.client,
+        motive: expenseReport.motive,
+      }));
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        message: 'Error fetching ExpenseReports',
+        error: error.message,
+      });
     }
   },
 };
