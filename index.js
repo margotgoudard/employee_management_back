@@ -1,4 +1,5 @@
-// const sequelize = require('./config/config');
+const cron = require('node-cron');
+const sequelize = require('./config/sequelize.js');
 const { sequelizeAuthAndSync } = require('./controllers/connectionDB');
 const helmet = require('helmet');
 const express = require('express');
@@ -12,9 +13,20 @@ app.use(cors());
 app.use(helmet()); 
 app.use(express.json());
 
-sequelizeAuthAndSync()
+sequelizeAuthAndSync();  
 
-// Routes
+// Tâche cron pour créer les emplois du temps mensuels chaque premier jour du mois à minuit
+cron.schedule('0 0 1 * *', async () => {
+    console.log('Starting monthly timetable creation (test)...');
+    try {
+        await sequelize.query('SELECT create_timetables_for_all_users()');
+        console.log('Monthly timetables created successfully.');
+    } catch (error) {
+        console.error('Error creating monthly timetables:', error);
+    }
+});
+
+
 const userRoutes = require('./routes/userRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const companyRoutes = require('./routes/companyRoutes');
@@ -24,10 +36,10 @@ const expenseReportRoutes = require('./routes/expenseReportRoutes.js')
 const dailyTimetableSheetRoutes = require('./routes/dailyTimetableRoutes.js')
 const timeSlotRoutes = require('./routes/timeSlotRoutes.js')
 const mensualTimetableSheetRoutes = require('./routes/mensualTimetableRoutes.js')
-
 const permissionRoutes = require('./routes/permissionRoutes');
 const documentCategoryRoutes = require('./routes/documentCategoryRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+
 
 app.use('/api/users', userRoutes);
 app.use('/api/audits', auditRoutes);
@@ -43,8 +55,10 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/document-categories', documentCategoryRoutes);
 app.use('/api/documents', documentRoutes);
 
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Serveur lancé sur le port ${PORT}`);
   console.log(`Serveur lancé à l'adresse : http://localhost:${PORT}`);
 });
+
