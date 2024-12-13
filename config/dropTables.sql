@@ -112,6 +112,12 @@ DROP SEQUENCE IF EXISTS public.company_id_company_seq;
 DROP TABLE IF EXISTS public.company;
 DROP SEQUENCE IF EXISTS public.audit_id_audit_seq;
 DROP TABLE IF EXISTS public.audit;
+DROP FUNCTION IF EXISTS public.create_timetables_for_all_users();
+DROP FUNCTION IF EXISTS public.create_next_month_timetables(id_user integer);
+DROP TYPE IF EXISTS public.enum_mensual_timetable_sheet_status;
+DROP TYPE IF EXISTS public.enum_daily_timetable_sheet_status;
+DROP TYPE IF EXISTS public.enum_compliance_check_parameter_type;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
