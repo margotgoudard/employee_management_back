@@ -158,7 +158,7 @@ const dailyTimetableController = {
       }
 
       if (dailyTimetable.status !== 'Travaillé') {
-        return res.status(400).json({ message: 'The day is not worked' });
+        return res.status(200).json({ message: 'No worked hours found', totalWorkedHours: 0 });
       }
 
       const timeSlots = await TimeSlot.findAll({
