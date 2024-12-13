@@ -48,7 +48,7 @@ MensualTimetableSheet.init(
   {
     sequelize,
     modelName: 'MensualTimetableSheet',
-    tableName: 'mensual_timetable_sheet'
+    tableName: 'mensual_timetable_sheet',
   }
 );
 

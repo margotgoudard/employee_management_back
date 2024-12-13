@@ -1,4 +1,4 @@
-const sequelize = require('../config/sequelize.js')
+const sequelize = require('../config/sequelize.js');
 const { Sequelize } = require('sequelize');
 const Audit = require('./Audit.js');
 const User = require('./User.js');
@@ -21,67 +21,75 @@ const Notification = require('./Notification.js');
 const Subordination = require('./Subordination.js');
 
 Audit.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
-User.hasMany(Audit, { foreignKey: 'id_user', as: 'audits' });
+User.hasMany(Audit, { foreignKey: 'id_user', as: 'audits', onDelete: 'CASCADE' });
 
-// User.belongsToMany(Company, { through: 'user_company', foreignKey: 'id_user' });
-// Company.belongsToMany(User, { through: 'user_company', foreignKey: 'id_company' });
-
-// Relations TimeSlot et DailyTimeTableSheet
-TimeSlot.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_time', as: 'dailyTime' });
-DailyTimetableSheet.hasMany(TimeSlot, { foreignKey: 'id_daily_time', as: 'timeSlots' });
+// Relations TimeSlot et DailyTimetableSheet
+TimeSlot.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_time', as: 'dailyTime', onDelete: 'CASCADE' });
+DailyTimetableSheet.hasMany(TimeSlot, { foreignKey: 'id_daily_time', as: 'timeSlots', onDelete: 'CASCADE' });
 
 // Relations TimeSlot et PlaceCategory
-TimeSlot.belongsTo(PlaceCategory, { foreignKey: 'id_place_category', as: 'placeCategory' });
-PlaceCategory.hasMany(TimeSlot, { foreignKey: 'id_place_category', as: 'timeSlots' });
+TimeSlot.belongsTo(PlaceCategory, { foreignKey: 'id_place_category', as: 'placeCategory', onDelete: 'CASCADE' });
+PlaceCategory.hasMany(TimeSlot, { foreignKey: 'id_place_category', as: 'timeSlots', onDelete: 'CASCADE' });
 
 // Relations DailyTimetableSheet et ExpenseReport
-DailyTimetableSheet.hasMany(ExpenseReport, { foreignKey: 'id_daily_timetable', as: 'expenseReports' });
+DailyTimetableSheet.hasMany(ExpenseReport, { foreignKey: 'id_daily_timetable', as: 'expenseReports', onDelete: 'CASCADE' });
 ExpenseReport.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_timetable', as: 'dailyTimetable' });
 
 // Relations entre MensualTimetableSheet et DailyTimetableSheet
-MensualTimetableSheet.hasMany(DailyTimetableSheet, { foreignKey: 'id_timetable', as: 'dailyTimetableList' });
-DailyTimetableSheet.belongsTo(MensualTimetableSheet, { foreignKey: 'id_timetable', as: 'mensualTimetable' });
+MensualTimetableSheet.hasMany(DailyTimetableSheet, { foreignKey: 'id_timetable', as: 'dailyTimetableList', onDelete: 'CASCADE' });
+DailyTimetableSheet.belongsTo(MensualTimetableSheet, { foreignKey: 'id_timetable', as: 'mensualTimetable', onDelete: 'CASCADE' });
 
 // Relations MensualTimetableSheet et User
-MensualTimetableSheet.belongsTo(User, { foreignKey: 'id_user', as: 'user' });  
-MensualTimetableSheet.hasMany(DailyTimetableSheet, { foreignKey: 'id_timetable', as: 'dailyTimetables' });  
+MensualTimetableSheet.belongsTo(User, { foreignKey: 'id_user', as: 'user', onDelete: 'CASCADE' });  
+User.hasMany(MensualTimetableSheet, { foreignKey: 'id_user', as: 'mensualTimetables', onDelete: 'CASCADE' });  
 
-// Realtions FeeCategory et ExpenseReport
-FeeCategory.hasMany(ExpenseReport, { foreignKey: 'id_fee_category', as: 'expenseReports' });
-ExpenseReport.belongsTo(FeeCategory, { foreignKey: 'id_fee_category', as: 'feeCategory' });
+// Relations FeeCategory et ExpenseReport
+FeeCategory.hasMany(ExpenseReport, { foreignKey: 'id_fee_category', as: 'expenseReports', onDelete: 'CASCADE' });
+ExpenseReport.belongsTo(FeeCategory, { foreignKey: 'id_fee_category', as: 'feeCategory', onDelete: 'CASCADE' });
 
-User.belongsToMany(Permission, { through: 'user_permission', foreignKey: 'id_user' });
-Permission.belongsToMany(User, { through: 'user_permission', foreignKey: 'id_permission' });
+// Relations Permission et User
+User.belongsToMany(Permission, { through: 'user_permission', foreignKey: 'id_user', onDelete: 'CASCADE' });
+Permission.belongsToMany(User, { through: 'user_permission', foreignKey: 'id_permission', onDelete: 'CASCADE' });
 
-Document.belongsTo(DocumentCategory, { foreignKey: 'id_document_category', as: 'document_category' });
-DocumentCategory.hasMany(Document, { foreignKey: 'id_document_category', as: 'documents' });
+// Relations Document et DocumentCategory
+Document.belongsTo(DocumentCategory, { foreignKey: 'id_document_category', as: 'document_category', onDelete: 'CASCADE' });
+DocumentCategory.hasMany(Document, { foreignKey: 'id_document_category', as: 'documents', onDelete: 'CASCADE' });
 
-Document.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
-User.hasMany(Document, { foreignKey: 'id_user', as: 'documents' });
+// Relations Document et User
+Document.belongsTo(User, { foreignKey: 'id_user', as: 'user', onDelete: 'CASCADE' });
+User.hasMany(Document, { foreignKey: 'id_user', as: 'documents', onDelete: 'CASCADE' });
 
-ComplianceCheckParameter.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'compliance_check' });
-ComplianceCheck.hasMany(ComplianceCheckParameter, { foreignKey: 'id_compliance_check', as: 'parameters' });
+// Relations ComplianceCheckParameter et ComplianceCheck
+ComplianceCheckParameter.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'compliance_check', onDelete: 'CASCADE' });
+ComplianceCheck.hasMany(ComplianceCheckParameter, { foreignKey: 'id_compliance_check', as: 'parameters', onDelete: 'CASCADE' });
 
-UserComplianceCheck.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
-User.hasMany(UserComplianceCheck, { foreignKey: 'id_user', as: 'compliance_checks' });
+// Relations UserComplianceCheck et User
+UserComplianceCheck.belongsTo(User, { foreignKey: 'id_user', as: 'user', onDelete: 'CASCADE' });
+User.hasMany(UserComplianceCheck, { foreignKey: 'id_user', as: 'compliance_checks', onDelete: 'CASCADE' });
 
-UserComplianceCheck.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'compliance_check' });
-ComplianceCheck.hasMany(UserComplianceCheck, { foreignKey: 'id_compliance_check', as: 'users' });
+// Relations UserComplianceCheck et ComplianceCheck
+UserComplianceCheck.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'compliance_check', onDelete: 'CASCADE' });
+ComplianceCheck.hasMany(UserComplianceCheck, { foreignKey: 'id_compliance_check', as: 'users', onDelete: 'CASCADE' });
 
-Department.belongsTo(Company, { foreignKey: 'id_company', as: 'company' });
-Company.hasMany(Department, { foreignKey: 'id_company', as: 'departments' });
+// Relations Department et Company
+Department.belongsTo(Company, { foreignKey: 'id_company', as: 'company', onDelete: 'CASCADE' });
+Company.hasMany(Department, { foreignKey: 'id_company', as: 'departments', onDelete: 'CASCADE' });
 
-Notification.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
-User.hasMany(Notification, { foreignKey: 'id_user', as: 'notifications' });
+// Relations Notification et User
+Notification.belongsTo(User, { foreignKey: 'id_user', as: 'user', onDelete: 'CASCADE' });
+User.hasMany(Notification, { foreignKey: 'id_user', as: 'notifications', onDelete: 'CASCADE' });
 
-Subordination.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
-User.hasMany(Subordination, { foreignKey: 'id_user', as: 'subordinations' });
+// Relations Subordination et User
+Subordination.belongsTo(User, { foreignKey: 'id_user', as: 'user', onDelete: 'CASCADE' });
+User.hasMany(Subordination, { foreignKey: 'id_user', as: 'subordinations', onDelete: 'CASCADE' });
 
-Subordination.belongsTo(User, { foreignKey: 'id_manager', as: 'manager' });
-User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'managed' });
+// Relations Subordination et Manager (User)
+Subordination.belongsTo(User, { foreignKey: 'id_manager', as: 'manager', onDelete: 'CASCADE' });
+User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'managed', onDelete: 'CASCADE' });
 
-Subordination.belongsTo(Department, { foreignKey: 'id_department', as: 'department' });
-Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinations' });
+// Relations Subordination et Department
+Subordination.belongsTo(Department, { foreignKey: 'id_department', as: 'department', onDelete: 'CASCADE' });
+Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinations', onDelete: 'CASCADE' });
 
 module.exports = {
     User,
@@ -102,4 +110,4 @@ module.exports = {
     Department,
     Notification,
     Subordination,
-  };
+};
