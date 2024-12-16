@@ -6,7 +6,7 @@ const expenseReportController = {
 
   createExpenseReport: async (req, res) => {
     try {
-      const { id_daily_timetable, id_fee_category, amount, client, motive } = req.body;
+      const { id_daily_timetable, id_fee_category,document_name, amount, client, motive } = req.body;
 
       if (!id_daily_timetable || !id_fee_category || !amount) {
         return res.status(400).json({ message: 'Missing required fields: id_daily_timetable, id_fee_category, or amount' });
@@ -22,6 +22,7 @@ const expenseReportController = {
         id_fee_category,
         amount,
         document,
+        document_name,
         client,
         motive,
       });
@@ -36,6 +37,7 @@ const expenseReportController = {
           id_daily_timetable: expenseReport.id_daily_timetable,
           id_fee_category: expenseReport.id_fee_category,
           amount: expenseReport.amount,
+          document_name: expenseReport.document_name,
           document: base64Document,
           client: expenseReport.client,
           motive: expenseReport.motive,
@@ -68,6 +70,7 @@ const expenseReportController = {
         id_daily_timetable: expenseReport.id_daily_timetable,
         id_fee_category: expenseReport.id_fee_category,
         amount: expenseReport.amount,
+        document_name: expenseReport.document_name,
         document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null,
         client: expenseReport.client,
         motive: expenseReport.motive,
@@ -98,6 +101,7 @@ const expenseReportController = {
         id_daily_timetable: expenseReport.id_daily_timetable,
         id_fee_category: expenseReport.id_fee_category,
         amount: expenseReport.amount,
+        document_name: expenseReport.document_name,
         document: base64Document,
         client: expenseReport.client,
         motive: expenseReport.motive,
@@ -112,21 +116,22 @@ const expenseReportController = {
   updateExpenseReport: async (req, res) => {
     try {
       const { id } = req.params;
-      const { id_daily_timetable, amount, client, motive } = req.body;
+      const { id_daily_timetable, amount,document_name, client, motive } = req.body;
 
       const expenseReport = await ExpenseReport.findByPk(id);
       if (!expenseReport) {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
 
-      let updatedDocument = expenseReport.document; // Conserver le document existant s'il n'y en a pas de nouveau
+      let updatedDocument = expenseReport.document; 
       if (req.file) {
-        updatedDocument = req.file.buffer; // Mettre à jour avec le nouveau document, si fourni
+        updatedDocument = req.file.buffer; 
       }
 
       await expenseReport.update({
         id_daily_timetable,
         amount,
+        document_name,
         document: updatedDocument,
         client,
         motive,
@@ -141,10 +146,11 @@ const expenseReportController = {
           id_expense_report: expenseReport.id_expense_report,
           id_daily_timetable: expenseReport.id_daily_timetable,
           id_fee_category: expenseReport.id_fee_category,
-          amount: expenseReport.amount,
+          amount,
+          document_name,
           document: base64Document,
-          client: expenseReport.client,
-          motive: expenseReport.motive,
+          client,
+          motive,
         },
       });
     } catch (error) {
@@ -208,6 +214,7 @@ const expenseReportController = {
         id_daily_timetable: expenseReport.id_daily_timetable,
         id_fee_category: expenseReport.id_fee_category,
         amount: expenseReport.amount,
+        document_name: expenseReport.document_name,
         document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null,
         client: expenseReport.client,
         motive: expenseReport.motive,
