@@ -53,19 +53,19 @@ ExpenseReport.belongsTo(FeeCategory, { foreignKey: 'id_fee_category', as: 'feeCa
 User.belongsToMany(Permission, { through: 'user_permission', foreignKey: 'id_user' });
 Permission.belongsToMany(User, { through: 'user_permission', foreignKey: 'id_permission' });
 
-Document.belongsTo(DocumentCategory, { foreignKey: 'id_document_category', as: 'document_category' });
+Document.belongsTo(DocumentCategory, { foreignKey: 'id_document_category', as: 'documentCategory' });
 DocumentCategory.hasMany(Document, { foreignKey: 'id_document_category', as: 'documents' });
 
 Document.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
 User.hasMany(Document, { foreignKey: 'id_user', as: 'documents' });
 
-ComplianceCheckParameter.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'compliance_check' });
+ComplianceCheckParameter.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'complianceCheck' });
 ComplianceCheck.hasMany(ComplianceCheckParameter, { foreignKey: 'id_compliance_check', as: 'parameters' });
 
 UserComplianceCheck.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
 User.hasMany(UserComplianceCheck, { foreignKey: 'id_user', as: 'compliance_checks' });
 
-UserComplianceCheck.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'compliance_check' });
+UserComplianceCheck.belongsTo(ComplianceCheck, { foreignKey: 'id_compliance_check', as: 'complianceCheck' });
 ComplianceCheck.hasMany(UserComplianceCheck, { foreignKey: 'id_compliance_check', as: 'users' });
 
 Department.belongsTo(Company, { foreignKey: 'id_company', as: 'company' });

@@ -54,6 +54,35 @@ VALUES
 (1, 'John', 'Doe', 'Employee', 'john.doe@example.com', '1234567890', 'password123', '1', 'Main Street', 'Sample City', '12345', 'Sample Region', 'Sample Country', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
+INSERT INTO user_compliance_check (id_user_compliance_check, id_compliance_check, id_user, parameters, "createdAt", "updatedAt")
+VALUES
+    -- Heures maximales quotidiennes
+    (1, 1, 1, '{"id_parameter": 1, "value": 8}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+    -- Heures maximales hebdomadaires
+    (2, 2, 1, '{"id_parameter": 2, "value": 40}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+    -- Heures maximales mensuelles
+    (3, 3, 1, '{"id_parameter": 3, "value": 160}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+    -- Temps de pause quotidienne (avec plusieurs paramètres)
+    (4, 4, 1, 
+     '[
+        {"id_parameter": 4, "value": 60},
+        {"id_parameter": 5, "value": 30}
+      ]',
+     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+    -- Temps minimal entre la fin de journée de travail et le début de la journée suivante
+    (5, 5, 1, '{"id_parameter": 6, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+    -- Durée maximale d’un bloc de travail sans pause
+    (6, 6, 1, '{"id_parameter": 7, "value": 4}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+    -- Minimum de jours de repos par semaine
+    (7, 7, 1, '{"id_parameter": 8, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
 -- function to create next month timetables
 CREATE OR REPLACE FUNCTION create_next_month_timetables(id_user INTEGER)
 RETURNS VOID AS $$

@@ -29,6 +29,8 @@ const permissionRoutes = require('./routes/permissionRoutes');
 const documentCategoryRoutes = require('./routes/documentCategoryRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 
+const complianceCheckRoutes = require('./routes/complianceCheckRoutes');
+
 app.use('/api/users', userRoutes);
 app.use('/api/audits', auditRoutes);
 app.use('/api/companies', companyRoutes);
@@ -42,6 +44,10 @@ app.use('/api/mensual-timetable-sheets', mensualTimetableSheetRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/document-categories', documentCategoryRoutes);
 app.use('/api/documents', documentRoutes);
+
+app.use('/api/compliance-checks', complianceCheckRoutes);
+
+const complianceCheckController = require('./controllers/complianceCheckController');
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -13,6 +13,10 @@ const sequelize = new Sequelize(database, username, password, {
   host,
   dialect: 'postgres',
   port,
+  timezone: '+00:00', 
+  dialectOptions: {
+    useUTC: true, 
+  },
   logging: false,
 });
 
