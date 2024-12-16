@@ -4,58 +4,103 @@ const User = require('../models/User');
 const userController = {
 
   // Création d'un utilisateur
-  createUser: async (req, res) => {
-    try {
-      const { first_name, last_name, role, mail, phone, password, num_address, street_address, city_address, area_code_address, region_address, country_address, is_admin, is_sup_admin } = req.body;
+createUser: async (req, res) => {
+  try {
+    const {
+      first_name,
+      last_name,
+      role,
+      mail,
+      phone,
+      password,
+      num_address,
+      street_address,
+      city_address,
+      area_code_address,
+      region_address,
+      country_address,
+      is_admin,
+      is_sup_admin,
+    } = req.body;
 
-      if (!first_name || !last_name || !role || !mail || !phone || !password || !num_address || !street_address || !city_address || !area_code_address || !region_address || !country_address || typeof is_admin !== 'boolean' || typeof is_sup_admin !== 'boolean') {
-        return res.status(400).json({ message: 'Missing required fields' });
-      }
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const user = await User.create({
-        first_name,
-        last_name,
-        role,
-        mail,
-        phone,
-        password: hashedPassword,
-        num_address,
-        street_address,
-        city_address,
-        area_code_address,
-        region_address,
-        country_address,
-        is_admin,
-        is_sup_admin,
-      });
-
-      return res.status(201).json({
-        message: 'User created successfully',
-        user: {
-          id_user: user.id_user,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          mail: user.mail,
-          phone: user.phone,
-          num_address: user.num_address,
-          street_address: user.street_address,
-          city_address: user.city_address,
-          area_code_address: user.area_code_address,
-          region_address: user.region_address,
-          country_address: user.country_address,
-          is_admin: user.is_admin,
-          is_sup_admin: user.is_sup_admin,
-          last_connected: user.last_connected,
-        }
-      });
-    } catch (error) {
-      console.error('Error creating user:', error);
-      return res.status(500).json({ message: 'Error creating user', error });
+    // Validation des champs obligatoires
+    if (
+      !first_name || !last_name || !role || !mail || !phone || !password ||
+      !num_address || !street_address || !city_address || !area_code_address ||
+      !region_address || !country_address ||
+      typeof is_admin !== 'boolean' || typeof is_sup_admin !== 'boolean'
+    ) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
-  },
+
+    // Validation du format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(mail)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Validation du format du numéro de téléphone (exemple basique)
+    const phoneRegex = /^\+?\d{10,15}$/; // Ex : +33123456789 ou 0123456789
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone number format' });
+    }
+
+    // Hachage du mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Création de l'utilisateur
+    const user = await User.create({
+      first_name,
+      last_name,
+      role,
+      mail,
+      phone,
+      password: hashedPassword,
+      num_address,
+      street_address,
+      city_address,
+      area_code_address,
+      region_address,
+      country_address,
+      is_admin,
+      is_sup_admin,
+    });
+
+    // Réponse réussie
+    return res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        id_user: user.id_user,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+        mail: user.mail,
+        phone: user.phone,
+        num_address: user.num_address,
+        street_address: user.street_address,
+        city_address: user.city_address,
+        area_code_address: user.area_code_address,
+        region_address: user.region_address,
+        country_address: user.country_address,
+        is_admin: user.is_admin,
+        is_sup_admin: user.is_sup_admin,
+        last_connected: user.last_connected,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+
+    // Gestion des erreurs liées à la contrainte d'unicité
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        message: 'The provided email is already in use. Please use a different email.',
+      });
+    }
+
+    return res.status(500).json({ message: 'Error creating user', error });
+  }
+},
+
 
   // Récupérer tous les utilisateurs
   getAllUsers: async (req, res) => {
