@@ -29,7 +29,6 @@ const userController = {
         country_address,
         is_admin,
         is_sup_admin,
-        last_connected: new Date(), 
       });
 
       return res.status(201).json({
@@ -138,36 +137,66 @@ const userController = {
     }
   },
 
-  // Modifier le mot de passe d'un utilisateur par ID
-  changePassword: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { oldPassword, newPassword } = req.body;
+// Modifier le mot de passe d'un utilisateur par ID avec confirmation du nouveau mot de passe et gestion de last_connected
+changePassword: async (req, res) => {
+  try {
+    const { id } = req.params; // ID de l'utilisateur passé en paramètre
+    const { newPassword, confirmationPassword } = req.body; // Nouveau mot de passe et confirmation
 
-      if (!oldPassword || !newPassword) {
-        return res.status(400).json({ message: 'Old password and new password are required' });
-      }
-
-      const user = await User.findByPk(id);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      const isMatch = await bcrypt.compare(oldPassword, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: 'Incorrect current password' });
-      }
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      await user.update({ password: hashedPassword });
-
-      return res.status(200).json({ message: 'Password updated successfully' });
-    } catch (error) {
-      console.error('Error changing password:', error);
-      return res.status(500).json({ message: 'Error changing password', error });
+    // Vérification que les deux champs sont fournis
+    if (!newPassword || !confirmationPassword) {
+      return res
+        .status(400)
+        .json({ message: 'New password and confirmation password are required' });
     }
-  },
+
+    // Vérification que les deux mots de passe correspondent
+    if (newPassword !== confirmationPassword) {
+      return res
+        .status(400)
+        .json({ message: 'New password and confirmation password do not match' });
+    }
+
+    // Récupération de l'utilisateur à partir de la base de données
+    const user = await User.findByPk(id);
+
+    // Vérification que l'utilisateur existe
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Vérification que le champ last_connected est NULL
+    if (user.last_connected !== null) {
+      return res
+        .status(400)
+        .json({
+          message:
+            'Password can only be changed if last_connected is null. Please contact an administrator.',
+        });
+    }
+
+    // Hashage du nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Mise à jour du mot de passe et du champ last_connected
+    await user.update({
+      password: hashedPassword,
+      last_connected: new Date(), // Date et heure actuelles
+    });
+
+    // Réponse de succès
+    return res.status(200).json({
+      message: 'Password updated successfully and last_connected updated',
+    });
+  } catch (error) {
+    // Gestion des erreurs
+    console.error('Error changing password:', error);
+    return res.status(500).json({ message: 'Error changing password', error });
+  }
+},
+
+
+
 
 };
 

@@ -39,6 +39,7 @@ const mensualTimetableSheetRoutes = require('./routes/mensualTimetableRoutes.js'
 const permissionRoutes = require('./routes/permissionRoutes');
 const documentCategoryRoutes = require('./routes/documentCategoryRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const authRoutes = require('./routes/authRoutes.js')
 
 
 app.use('/api/users', userRoutes);
@@ -50,7 +51,7 @@ app.use('/api/expense-reports', expenseReportRoutes);
 app.use('/api/daily-timetable-sheets', dailyTimetableSheetRoutes);
 app.use('/api/time-slots', timeSlotRoutes);
 app.use('/api/mensual-timetable-sheets', mensualTimetableSheetRoutes);
-
+app.use('/api/auth', authRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/document-categories', documentCategoryRoutes);
 app.use('/api/documents', documentRoutes);
