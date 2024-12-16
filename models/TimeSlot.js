@@ -26,6 +26,15 @@ TimeSlot.init(
         key: 'id_place_category', 
       },
     },
+    status: {
+      type: DataTypes.ENUM(
+        'Travaillé',
+        'Congés payés',
+        'Arrêt maladie',
+        'Congés sans solde'
+      ),
+      allowNull: false,
+    },
     start: {
       type: DataTypes.TIME,
       allowNull: false,
