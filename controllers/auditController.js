@@ -83,7 +83,7 @@ const auditController = {
 
       // Créer un audit pour la mise à jour
       await createAudit({
-        table_name: 'audits',
+        table_name: 'audit',
         action: 'UPDATE',
         old_values: oldValues,
         new_values: audit.dataValues,
@@ -106,16 +106,11 @@ const auditController = {
       if (!audit) {
         return res.status(404).json({ message: 'Audit not found' });
       }
-
-      // Stocker les anciennes valeurs avant suppression
       const oldValues = { ...audit.dataValues };
-
-      // Supprimer l'audit
       await audit.destroy();
 
-      // Créer un audit pour la suppression
       await createAudit({
-        table_name: 'audits',
+        table_name: 'audit',
         action: 'DELETE',
         old_values: oldValues,
         new_values: null,
@@ -128,7 +123,6 @@ const auditController = {
     }
   },
 
-  // Récupérer les audits par utilisateur
   getAuditsByUserId: async (req, res) => {
     try {
       const { id_user } = req.params;

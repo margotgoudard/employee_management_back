@@ -32,7 +32,7 @@ const companyController = {
       });
 
       await createAudit({
-        table_name: 'Company',
+        table_name: 'company',
         action: 'CREATE',
         old_values: null,
         new_values: company.toJSON(), 
@@ -83,7 +83,7 @@ const companyController = {
       });
 
       await createAudit({
-        table_name: 'Company',
+        table_name: 'company',
         action: 'UPDATE',
         old_values: oldValues,
         new_values: company.toJSON(),
@@ -111,7 +111,7 @@ const companyController = {
       await company.destroy();
 
       await createAudit({
-        table_name: 'Company',
+        table_name: 'company',
         action: 'DELETE',
         old_values: oldValues,
         new_values: null,
