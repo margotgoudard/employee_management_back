@@ -14,9 +14,7 @@ const expenseReportController = {
 
       let document = null;
       if (req.file) {
-        document = req.file.buffer;
-      } else {
-        return res.status(400).json({ message: 'Document file is required' });
+        document = req.file.buffer; // Si un fichier est envoyé, on le stocke
       }
 
       const expenseReport = await ExpenseReport.create({
@@ -28,8 +26,8 @@ const expenseReportController = {
         motive,
       });
 
-      // Conversion du document en base64 pour la réponse
-      const base64Document = Buffer.from(document).toString('base64');
+      // Conversion du document en base64 pour la réponse (si présent)
+      const base64Document = document ? Buffer.from(document).toString('base64') : null;
 
       return res.status(201).json({
         message: 'ExpenseReport created successfully',
@@ -64,13 +62,13 @@ const expenseReportController = {
         return res.status(404).json({ message: 'No ExpenseReports found for the given DailyTimetable ID' });
       }
 
-      // Convertir les documents en base64 avant de les envoyer
+      // Convertir les documents en base64 avant de les envoyer (si présents)
       const result = expenseReports.map((expenseReport) => ({
         id_expense_report: expenseReport.id_expense_report,
         id_daily_timetable: expenseReport.id_daily_timetable,
         id_fee_category: expenseReport.id_fee_category,
         amount: expenseReport.amount,
-        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null, // Conversion en base64
+        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null,
         client: expenseReport.client,
         motive: expenseReport.motive,
       }));
@@ -85,9 +83,12 @@ const expenseReportController = {
     try {
       const { id } = req.params;
       const expenseReport = await ExpenseReport.findByPk(id);
+
       if (!expenseReport) {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
+
+      // Conversion du document en base64 (si présent)
       const base64Document = expenseReport.document
         ? Buffer.from(expenseReport.document).toString('base64')
         : null;
@@ -118,9 +119,9 @@ const expenseReportController = {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
 
-      let updatedDocument = expenseReport.document;
+      let updatedDocument = expenseReport.document; // Conserver le document existant s'il n'y en a pas de nouveau
       if (req.file) {
-        updatedDocument = req.file.buffer;
+        updatedDocument = req.file.buffer; // Mettre à jour avec le nouveau document, si fourni
       }
 
       await expenseReport.update({
@@ -131,7 +132,7 @@ const expenseReportController = {
         motive,
       });
 
-      // Conversion du document mis à jour en base64
+      // Conversion du document mis à jour en base64 (si présent)
       const base64Document = updatedDocument ? Buffer.from(updatedDocument).toString('base64') : null;
 
       return res.status(200).json({
@@ -207,7 +208,7 @@ const expenseReportController = {
         id_daily_timetable: expenseReport.id_daily_timetable,
         id_fee_category: expenseReport.id_fee_category,
         amount: expenseReport.amount,
-        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null, // Conversion en base64
+        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null,
         client: expenseReport.client,
         motive: expenseReport.motive,
       }));

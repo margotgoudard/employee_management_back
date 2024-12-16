@@ -35,7 +35,7 @@ ExpenseReport.init(
     },
     document: {
       type: DataTypes.BLOB('long'), 
-      allowNull: false,
+      allowNull: true,
     },
     client: {
       type: DataTypes.STRING, 

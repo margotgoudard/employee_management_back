@@ -134,57 +134,62 @@ const mensualTimetableController = {
 
   getMensualTimetableWithDetails: async (req, res) => {
     try {
-      const { id } = req.params; // ID de la fiche mensuelle (mensual timetable)
-
+      const { id } = req.params;
+  
       if (!id) {
         return res.status(400).json({ message: 'Mensual Timetable ID is required' });
       }
-
-      // Récupérer la fiche mensuelle avec les fiches journalières associées
+  
       const mensualTimetable = await MensualTimetableSheet.findOne({
         where: { id_timetable: id },
         include: [
           {
             model: DailyTimetableSheet,
-            as: 'dailyTimetables',
+            as: 'dailyTimetableList',
             include: [
               {
                 model: TimeSlot,
-                as: 'timeSlots', 
+                as: 'timeSlots',
               },
               {
                 model: ExpenseReport,
-                as: 'expenseReports', 
+                as: 'expenseReports',
               },
             ],
           },
         ],
       });
-
+  
       if (!mensualTimetable) {
         return res.status(404).json({ message: 'Mensual Timetable not found' });
       }
 
-      // Calcul des totaux
-      const totalWorkedHours = mensualTimetable.dailyTimetables.reduce((total, dailyTimetable) => {
-        const workedHours = calculateWorkedHours(dailyTimetable.timeSlots);
-        return total + workedHours;
+      const totalWorkedHours = mensualTimetable.dailyTimetableList.reduce((total, dailyTimetable) => {
+        if (dailyTimetable.status === 'Travaillé') {
+          return total + calculateWorkedHours(dailyTimetable.timeSlots);
+        } else if (dailyTimetable.status === 'Demi-journée') {
+          const workedTimeSlots = dailyTimetable.timeSlots.filter(ts => ts.status === 'Travaillé');
+          return total + calculateWorkedHours(workedTimeSlots);
+        }
+        return total; 
       }, 0);
-
-      const totalExpenseNotes = calculateTotalExpenseNotes(mensualTimetable.dailyTimetables);
-
-      // Retourner la fiche mensuelle avec les totaux
+  
+      const totalExpenseNotes = mensualTimetable.dailyTimetableList.reduce((total, dailyTimetable) => {
+        return total + calculateTotalExpenseNotes(dailyTimetable.expenseReports);
+      }, 0);
+  
       return res.status(200).json({
         mensualTimetable,
-        totalWorkedHours: totalWorkedHours.toFixed(2), // Limiter à 2 décimales
-        totalExpenseNotes,
+        totalWorkedHours: totalWorkedHours.toFixed(2), 
+        totalExpenseNotes: totalExpenseNotes.toFixed(2), 
       });
-
+  
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Error fetching Mensual Timetable with details', error });
     }
-  },
+  }
+  
   
 };
 

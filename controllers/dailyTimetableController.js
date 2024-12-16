@@ -157,13 +157,14 @@ const dailyTimetableController = {
         return res.status(404).json({ message: 'Daily Timetable not found' });
       }
 
-      if (dailyTimetable.status !== 'Travaillé') {
+      if (dailyTimetable.status !== 'Travaillé'&& dailyTimetable.status !== 'Demi-journée') {
         return res.status(200).json({ message: 'No worked hours found', totalWorkedHours: 0 });
       }
 
       const timeSlots = await TimeSlot.findAll({
         where: {
           id_daily_time: id,
+          status: 'Travaillé'
         },
       });
 
