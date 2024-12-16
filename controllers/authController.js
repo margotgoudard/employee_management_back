@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const { createTokens } = require("../middleware/auth.js");
 const User = require("../models/User.js");
+const { createAudit } = require('./auditController.js');
 
 
 const login = async (req, res) => {
@@ -25,7 +26,15 @@ const login = async (req, res) => {
 
     const token = createTokens(user);
 
-    res.status(200).json({
+    await createAudit({
+      table_name: 'user',
+      action: 'LOGIN',
+      old_values: null,
+      new_values: { mail: user.mail },
+      userId: user.id_user, 
+    });
+
+    return res.status(200).json({
       message: "Login successful.",
       token: token,
       user: {
