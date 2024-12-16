@@ -23,6 +23,10 @@ ComplianceCheckParameter.init(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    default_value: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     type: {
       type: DataTypes.ENUM('string', 'number', 'boolean'),
       allowNull: false,

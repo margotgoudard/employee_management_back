@@ -23,29 +23,32 @@ VALUES
     (6, 'Durée Maximale d''un Bloc de Travail', 'Durée maximale d''un bloc de travail continu sans pause.', 'WORK_BLOCK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (7, 'Minimum de Jours de Repos par Semaine', 'Nombre minimum de jours de repos par semaine.', 'DAYS_OFF', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
-INSERT INTO compliance_check_parameter (id_parameter, id_compliance_check, name, type, "createdAt", "updatedAt")
+INSERT INTO compliance_check_parameter (id_parameter, id_compliance_check, name, type, default_value, "createdAt", "updatedAt")
 VALUES
     -- Heures maximales quotidiennes
-    (1, 1, 'Max Daily Hours', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (1, 1, 'DAILY_HOUR', 'number', '14', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales hebdomadaires
-    (2, 2, 'Max Weekly Hours', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (2, 2, 'HEBDO_HOUR', 'number', '50', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales mensuelles
-    (3, 3, 'Max Monthly Hours', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (3, 3, 'MONTHLY_HOUR', 'number', '200', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Temps de pause quotidienne
-    (4, 4, 'Min Daily Breaks', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (5, 4, 'Min Longest Break', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (4, 4, 'DAILY_BREAK_5h30', 'number', '15', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (5, 4, 'DAILY_BREAK_7h', 'number', '30', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (6, 4, 'DAILY_BREAK_9h', 'number', '60', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (7, 4, 'DAILY_BREAK_MIN', 'number', '30', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (8, 4, 'DAILY_BREAK_FRACTIONNABLE', 'boolean', 'true', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
    
     -- Temps minimal entre la fin de journée de travail et le début de la journée suivante
-    (6, 5, 'Min Rest Between Days', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (9, 5, 'REST_PERIOD', 'number', '11', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Durée maximale d’un bloc de travail sans pause
-    (7, 6, 'Max Work Block Duration', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (10, 6, 'WORK_BLOCK', 'number', '6', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Minimum de jours de repos par semaine
-    (8, 7, 'Min Days Off Per Week', 'number', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+    (11, 7, 'DAYS_OFF', 'number', '1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- Test User
@@ -68,19 +71,22 @@ VALUES
     -- Temps de pause quotidienne (avec plusieurs paramètres)
     (4, 4, 1, 
      '[
-        {"id_parameter": 4, "value": 60},
-        {"id_parameter": 5, "value": 30}
+        {"id_parameter": 4, "value": 15},
+        {"id_parameter": 5, "value": 30},
+        {"id_parameter": 6, "value": 60},
+        {"id_parameter": 7, "value": 30},
+        {"id_parameter": 8, "value": true}
       ]',
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Temps minimal entre la fin de journée de travail et le début de la journée suivante
-    (5, 5, 1, '{"id_parameter": 6, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (5, 5, 1, '{"id_parameter": 9, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Durée maximale d’un bloc de travail sans pause
-    (6, 6, 1, '{"id_parameter": 7, "value": 4}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (6, 6, 1, '{"id_parameter": 10, "value": 4}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Minimum de jours de repos par semaine
-    (7, 7, 1, '{"id_parameter": 8, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+    (7, 7, 1, '{"id_parameter": 11, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- function to create next month timetables
@@ -116,15 +122,15 @@ BEGIN
 
         -- Insérer le daily timetable sheet
         INSERT INTO daily_timetable_sheet (id_timetable, day, status, on_call_duty,is_completed, "createdAt", "updatedAt")
-        VALUES (new_timetable_id, current_day, status::enum_daily_timetable_sheet_status, FALSE,FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (new_timetable_id, current_day, status::enum_daily_timetable_sheet_status, FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id_daily_timetable INTO daily_timetable_id;
 
         -- Si le statut est 'Travaillé', insérer deux timeslots par défaut
         IF status = 'Travaillé' THEN
-            INSERT INTO time_slot (id_daily_time, id_place_category, start, "end", "createdAt", "updatedAt")
+            INSERT INTO time_slot (id_daily_time, id_place_category, status, start, "end", "createdAt", "updatedAt")
             VALUES 
-                (daily_timetable_id, 1, '08:00', '12:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-                (daily_timetable_id, 1, '13:00', '18:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                (daily_timetable_id, 1, 'Travaillé', '08:00', '12:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                (daily_timetable_id, 1, 'Travaillé', '13:00', '18:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
         END IF;
 
         -- Avancer d'un jour
@@ -134,7 +140,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION create_timetables_for_all_users()
+CREATE OR REPLACE FUNCTION create_next_timetables_for_all_users()
 RETURNS VOID AS $$
 DECLARE
     user_id INTEGER;
@@ -146,4 +152,69 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- SELECT create_timetables_for_all_users();
+
+-- function to create next month timetables
+CREATE OR REPLACE FUNCTION create_current_month_timetables(id_user INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    next_month DATE := DATE_TRUNC('month', CURRENT_DATE);
+    month_start DATE := DATE_TRUNC('month', next_month);
+    month_end DATE := (DATE_TRUNC('month', next_month) + INTERVAL '1 month - 1 day')::DATE;
+    current_day DATE;
+    day_of_week INTEGER;
+    status TEXT;
+    new_timetable_id INTEGER;
+    daily_timetable_id INTEGER;
+BEGIN
+    -- Insérer le mensal time table pour le mois suivant
+    INSERT INTO mensual_timetable_sheet (id_user, month, year, status, "createdAt", "updatedAt")
+    VALUES (id_user, EXTRACT(MONTH FROM next_month), EXTRACT(YEAR FROM next_month), 'À compléter', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    RETURNING id_timetable INTO new_timetable_id;
+
+    -- Créer les daily time tables pour chaque jour du mois suivant
+    current_day := month_start;
+    WHILE current_day <= month_end LOOP
+        -- Calculer le jour de la semaine (1 = lundi, 7 = dimanche)
+        day_of_week := EXTRACT(DOW FROM current_day);
+
+        -- Déterminer le statut par défaut (week-end ou travaillé)
+        IF day_of_week IN (6, 0) THEN -- 6 = samedi, 0 = dimanche
+            status := 'Week-end';
+        ELSE
+            status := 'Travaillé';
+        END IF;
+
+        -- Insérer le daily timetable sheet
+        INSERT INTO daily_timetable_sheet (id_timetable, day, status, on_call_duty,is_completed, "createdAt", "updatedAt")
+        VALUES (new_timetable_id, current_day, status::enum_daily_timetable_sheet_status, FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING id_daily_timetable INTO daily_timetable_id;
+
+        -- Si le statut est 'Travaillé', insérer deux timeslots par défaut
+        IF status = 'Travaillé' THEN
+            INSERT INTO time_slot (id_daily_time, id_place_category, status, start, "end", "createdAt", "updatedAt")
+            VALUES 
+                (daily_timetable_id, 1, 'Travaillé', '08:00', '12:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                (daily_timetable_id, 1, 'Travaillé', '13:00', '18:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+        END IF;
+
+        -- Avancer d'un jour
+        current_day := current_day + INTERVAL '1 day';
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION create_current_timetables_for_all_users()
+RETURNS VOID AS $$
+DECLARE
+    user_id INTEGER;
+BEGIN
+    FOR user_id IN SELECT id_user FROM "user" LOOP
+        PERFORM create_current_month_timetables(user_id);
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- SELECT create_next_timetables_for_all_users();
+-- SELECT create_current_timetables_for_all_users()

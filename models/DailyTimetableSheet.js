@@ -31,7 +31,8 @@ DailyTimetableSheet.init(
         'Férié',
         'Congés payés',
         'Arrêt maladie',
-        'Congés sans solde'
+        'Congés sans solde',
+        'Demi-journée'
       ),
       allowNull: false,
     },

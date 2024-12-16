@@ -69,6 +69,11 @@ User.init(
     last_connected: {
       type: DataTypes.DATE,
     },
+    is_activated: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
   },
   {
     sequelize,  

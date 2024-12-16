@@ -35,7 +35,7 @@ const complianceCheckController = {
         include: [
           {
             model: ComplianceCheck,
-            as: 'complianceCheck',
+            as: 'complianceChecks',
             include: [
               {
                 model: ComplianceCheckParameter,
@@ -78,7 +78,6 @@ const complianceCheckController = {
     return;
   }
 
-  console.log('Mensual timetable:');
   const userComplianceChecks = await UserComplianceCheck.findAll({
     where: { id_user },
     include: [
@@ -94,34 +93,34 @@ const complianceCheckController = {
       },
     ],
   });
-console.log('User compliance checks:', userComplianceChecks.length);
+
+  // console.log('Checking compliance rule:', userComplianceChecks);
   for (const ucc of userComplianceChecks) {
    const parameters = ucc.parameters;
-
    console.log('Checking compliance rule:', ucc.complianceCheck.function_code, 'with parameters:', parameters);
 
     switch (ucc.complianceCheck.function_code) {
-      case 'DAILY_HOUR':
-        await checkDailyHour(mensualTimetable, [parameters]);
-        break;
-      case 'HEBDO_HOUR':
-        await checkWeeklyHour(mensualTimetable, [parameters]);
-        break;
+      // case 'DAILY_HOUR':
+      //   await checkDailyHour(mensualTimetable, [parameters]);
+      //   break;
+      // case 'HEBDO_HOUR':
+      //   await checkWeeklyHour(mensualTimetable, [parameters]);
+      //   break;
       case 'MONTHLY_HOUR':
         await checkMonthlyHour(mensualTimetable, [parameters]);
         break;
-      case 'DAILY_BREAK':
-        await checkDailyBreak(mensualTimetable, [parameters]);
-        break;
-      case 'REST_PERIOD':
-        await checkRestPeriod(mensualTimetable, [parameters]);
-        break;
-      case 'WORK_BLOCK':
-        await checkWorkBlock(mensualTimetable, [parameters]);
-        break;
-      case 'DAYS_OFF':
-        await checkDaysOff(mensualTimetable, [parameters]);
-        break;
+      // case 'DAILY_BREAK':
+      //   await checkDailyBreak(mensualTimetable, [parameters]);
+      //   break;
+      // case 'REST_PERIOD':
+      //   await checkRestPeriod(mensualTimetable, [parameters]);
+      //   break;
+      // case 'WORK_BLOCK':
+      //   await checkWorkBlock(mensualTimetable, [parameters]);
+      //   break;
+      // case 'DAYS_OFF':
+      //   await checkDaysOff(mensualTimetable, [parameters]);
+      //   break;
       default:
         console.error(`Unknown compliance check function code: ${ucc.complianceCheck.function_code}`);
     }
@@ -135,10 +134,11 @@ const checkDailyHour = async (mensualTimetable, parameters) => {
 
  console.log('Checking daily hours:', { maxDailyHours });
 
- const dailyTimetablesTravaille = mensualTimetable.dailyTimetables.filter((daily) => daily.status == 'Travaillé'); 
+ const dailyTimetablesTravaille = mensualTimetable.dailyTimetables.filter((daily) => daily.status == 'Travaillé' || daily.status == 'Demi-journée'); 
 
  const dailyHours = dailyTimetablesTravaille.map((daily) => {
    return {"date": daily.day, "hours": daily.timeSlots.reduce((total, slot) => {
+     if(slot.status != 'Travaillé') return total;
      const duration = (new Date(`1970-01-01T${slot.end}`) - new Date(`1970-01-01T${slot.start}`)) / 3600000;
      return total + duration;
    }, 0)};
@@ -199,19 +199,19 @@ const checkWeeklyHour = async (mensualTimetable, parameters) => {
   const allTimetables = [...previousMonthTimetables, ...mensualTimetable.dailyTimetables];
 
 
- const dailyTimetablesTravaille = allTimetables.filter((daily) => daily.status == 'Travaillé'); 
+ const dailyTimetablesTravaille = allTimetables.filter((daily) => daily.status == 'Travaillé' || daily.status == 'Demi-journée'); 
 
  // Iterate over all days in the timetables
  dailyTimetablesTravaille.forEach((daily) => {
    const currentDate = new Date(daily.day);
 
-   console.log('Checking weekly hours for:', currentDate);
 
    // Convert the start of the week to a string for use as a key
    const weekKey = getStartOfWeek(currentDate);
 
    // Calculate the total hours for the day
    const dailyTotal = daily.timeSlots.reduce((total, slot) => {
+    if(slot.status != 'Travaillé') return total;
      const duration = (new Date(`1970-01-01T${slot.end}`) - new Date(`1970-01-01T${slot.start}`)) / 3600000;
      return total + duration;
    }, 0);
@@ -229,19 +229,22 @@ const checkWeeklyHour = async (mensualTimetable, parameters) => {
 
 
 const checkMonthlyHour = async (mensualTimetable, parameters) => {
-  const maxMonthlyHours = parameters.find(param => param.id_parameter === 3)?.value || 160;
-  const totalHours = mensualTimetable.dailyTimetables.reduce((total, daily) => {
+  const maxMonthlyHours = parameters[0].value;
+  const dailyTimetablesTravaille = mensualTimetable.dailyTimetables.filter((daily) => daily.status == 'Travaillé' || daily.status == 'Demi-journée');
+  const totalHours = dailyTimetablesTravaille.reduce((total, daily) => {
     return total + daily.timeSlots.reduce((subTotal, slot) => {
+      if (slot.status != 'Travaillé') return subTotal;
       const duration = (new Date(`1970-01-01T${slot.end}`) - new Date(`1970-01-01T${slot.start}`)) / 3600000;
       return subTotal + duration;
     }, 0);
   }, 0);
-
+  console.log('Total hours:', totalHours, 'Max monthly hours:', maxMonthlyHours);
   if (totalHours > maxMonthlyHours) {
     console.log('Monthly hour limit exceeded:', totalHours);
   }
 };
 
+//todo
 const checkDailyBreak = async (mensualTimetable, parameters) => {
   const minDailyBreak = parameters.find(param => param.id_parameter === 4)?.value || 60;
   const minLongestBreak = parameters.find(param => param.id_parameter === 5)?.value || 30;
@@ -308,7 +311,7 @@ const checkDaysOff = async (mensualTimetable, parameters) => {
 };
 
 
- checkEachRule(1, 1);
+ // checkEachRule(1, 1);
 
 
  module.exports = complianceCheckController;
