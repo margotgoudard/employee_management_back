@@ -1,21 +1,22 @@
 const ExpenseReport = require('../models/ExpenseReport');
 const DailyTimetableSheet = require('../models/DailyTimetableSheet');
 const FeeCategory = require('../models/FeeCategory');
+const { createAudit } = require('./auditController');
 
 const expenseReportController = {
 
   createExpenseReport: async (req, res) => {
+
     try {
-      const { id_daily_timetable, id_fee_category,document_name, amount, client, motive } = req.body;
+      const { id_daily_timetable, id_fee_category, document_name, amount, client, motive } = req.body;
+      const userId = req.auth.userId;
 
       if (!id_daily_timetable || !id_fee_category || !amount) {
-        return res.status(400).json({ message: 'Missing required fields: id_daily_timetable, id_fee_category, or amount' });
+        return res.status(400).json({ 
+          message: 'Missing required fields: id_daily_timetable, id_fee_category, or amount' 
+        });
       }
-
-      let document = null;
-      if (req.file) {
-        document = req.file.buffer; // Si un fichier est envoyé, on le stocke
-      }
+      const document = req.file ? req.file.buffer.toString('base64') : null;
 
       const expenseReport = await ExpenseReport.create({
         id_daily_timetable,
@@ -26,27 +27,27 @@ const expenseReportController = {
         client,
         motive,
       });
-
-      // Conversion du document en base64 pour la réponse (si présent)
-      const base64Document = document ? Buffer.from(document).toString('base64') : null;
-
-      return res.status(201).json({
-        message: 'ExpenseReport created successfully',
-        expenseReport: {
-          id_expense_report: expenseReport.id_expense_report,
-          id_daily_timetable: expenseReport.id_daily_timetable,
-          id_fee_category: expenseReport.id_fee_category,
-          amount: expenseReport.amount,
-          document_name: expenseReport.document_name,
-          document: base64Document,
-          client: expenseReport.client,
-          motive: expenseReport.motive,
-        },
+      await createAudit({
+        table_name: 'expense_report',
+        action: 'CREATE',
+        old_values: null,
+        new_values: expenseReport.dataValues,
+        userId,
       });
+
+      const response = {
+        ...expenseReport.dataValues,
+        document: document, 
+      };
+      return res.status(201).json(response);
     } catch (error) {
-      return res.status(500).json({ message: 'Error creating ExpenseReport', error });
+      return res.status(500).json({ 
+        message: 'Error creating ExpenseReport', 
+        error: error.message 
+      });
     }
   },
+
 
   getExpenseReportsByDailyTimetable: async (req, res) => {
     try {
@@ -60,74 +61,62 @@ const expenseReportController = {
         where: { id_daily_timetable: id },
       });
 
-      if (expenseReports.length === 0) {
-        return res.status(404).json({ message: 'No ExpenseReports found for the given DailyTimetable ID' });
+      if (!expenseReports.length) {
+        return res.status(200).json([]);
       }
 
-      // Convertir les documents en base64 avant de les envoyer (si présents)
-      const result = expenseReports.map((expenseReport) => ({
-        id_expense_report: expenseReport.id_expense_report,
-        id_daily_timetable: expenseReport.id_daily_timetable,
-        id_fee_category: expenseReport.id_fee_category,
-        amount: expenseReport.amount,
-        document_name: expenseReport.document_name,
-        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null,
-        client: expenseReport.client,
-        motive: expenseReport.motive,
+      const reportsWithDecodedDocs = expenseReports.map(report => ({
+        ...report.dataValues,
+        document: report.document ? Buffer.from(report.document, 'base64').toString() : null
       }));
 
-      return res.status(200).json(result);
+      return res.status(200).json(reportsWithDecodedDocs);
     } catch (error) {
-      return res.status(500).json({ message: 'Error fetching ExpenseReports', error });
+      return res.status(500).json({ message: 'Error fetching ExpenseReports', error: error.message });
     }
   },
 
   getExpenseReportById: async (req, res) => {
     try {
       const { id } = req.params;
+
       const expenseReport = await ExpenseReport.findByPk(id);
 
       if (!expenseReport) {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
 
-      // Conversion du document en base64 (si présent)
-      const base64Document = expenseReport.document
-        ? Buffer.from(expenseReport.document).toString('base64')
-        : null;
-
-      const result = {
-        id_expense_report: expenseReport.id_expense_report,
-        id_daily_timetable: expenseReport.id_daily_timetable,
-        id_fee_category: expenseReport.id_fee_category,
-        amount: expenseReport.amount,
-        document_name: expenseReport.document_name,
-        document: base64Document,
-        client: expenseReport.client,
-        motive: expenseReport.motive,
+      const reportWithDecodedDoc = {
+        ...expenseReport.dataValues,
+        document: expenseReport.document
+          ? Buffer.from(expenseReport.document, 'base64').toString()
+          : null,
       };
 
-      return res.status(200).json(result);
+      return res.status(200).json(reportWithDecodedDoc);
     } catch (error) {
-      return res.status(500).json({ message: 'Error fetching ExpenseReport', error });
+      return res.status(500).json({ message: 'Error fetching ExpenseReport', error: error.message });
     }
   },
 
   updateExpenseReport: async (req, res) => {
     try {
       const { id } = req.params;
-      const { id_daily_timetable, amount,document_name, client, motive } = req.body;
-
+      const { id_daily_timetable, amount, document_name, client, motive } = req.body;
+      const userId = req.auth.userId;
+  
       const expenseReport = await ExpenseReport.findByPk(id);
+  
       if (!expenseReport) {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
-
-      let updatedDocument = expenseReport.document; 
-      if (req.file) {
-        updatedDocument = req.file.buffer; 
-      }
-
+  
+      const oldValues = { ...expenseReport.dataValues };
+  
+      const updatedDocument = req.file
+        ? req.file.buffer.toString('base64') 
+        : expenseReport.document;
+  
       await expenseReport.update({
         id_daily_timetable,
         amount,
@@ -136,96 +125,99 @@ const expenseReportController = {
         client,
         motive,
       });
-
-      // Conversion du document mis à jour en base64 (si présent)
-      const base64Document = updatedDocument ? Buffer.from(updatedDocument).toString('base64') : null;
-
-      return res.status(200).json({
-        message: 'ExpenseReport updated successfully',
-        expenseReport: {
-          id_expense_report: expenseReport.id_expense_report,
-          id_daily_timetable: expenseReport.id_daily_timetable,
-          id_fee_category: expenseReport.id_fee_category,
-          amount,
-          document_name,
-          document: base64Document,
-          client,
-          motive,
-        },
+  
+      await createAudit({
+        table_name: 'expense_report',
+        action: 'UPDATE',
+        old_values: oldValues,
+        new_values: expenseReport.dataValues,
+        userId,
       });
+  
+      const documentInBase64 = expenseReport.document
+        ? Buffer.from(expenseReport.document, 'base64').toString('base64')
+        : null;
+  
+      const response = {
+        ...expenseReport.dataValues,
+        document: documentInBase64,
+      };
+  
+      return res.status(200).json(response);
     } catch (error) {
-      return res.status(500).json({ message: 'Error updating ExpenseReport', error });
+      return res.status(500).json({
+        message: 'Error updating ExpenseReport',
+        error: error.message,
+      });
     }
   },
+  
+  
 
   deleteExpenseReport: async (req, res) => {
     try {
       const { id } = req.params;
+      const userId = req.auth.userId;
+
       const expenseReport = await ExpenseReport.findByPk(id);
+
       if (!expenseReport) {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
+
+      const oldValues = { ...expenseReport.dataValues };
+
       await expenseReport.destroy();
+
+      await createAudit({
+        table_name: 'expense_report',
+        action: 'DELETE',
+        old_values: oldValues,
+        new_values: null,
+        userId,
+      });
+
       return res.status(200).json({ message: 'ExpenseReport deleted successfully' });
     } catch (error) {
-      return res.status(500).json({ message: 'Error deleting ExpenseReport', error });
+      return res.status(500).json({ message: 'Error deleting ExpenseReport', error: error.message });
     }
   },
 
   getExpenseReportsByMensualTimetable: async (req, res) => {
     try {
       const { id } = req.params;
+
       if (!id) {
         return res.status(400).json({ message: 'MensualTimetable ID is required' });
       }
 
-      // Étape 1 : Récupérer les daily timetables associés au MensualTimetable ID
       const dailyTimetables = await DailyTimetableSheet.findAll({
         where: { id_timetable: id },
       });
-      if (!dailyTimetables || dailyTimetables.length === 0) {
-        return res.status(404).json({
-          message: 'No DailyTimetables found for the given MensualTimetable ID',
-        });
+
+      if (!dailyTimetables.length) {
+        return res.status(404).json({ message: 'No DailyTimetables found for the given MensualTimetable ID' });
       }
 
-      // Étape 2 : Récupérer les notes de frais associées
-      const dailyTimetableIds = dailyTimetables.map((dt) => dt.id_daily_timetable);
+      const dailyTimetableIds = dailyTimetables.map(dt => dt.id_daily_timetable);
 
       const expenseReports = await ExpenseReport.findAll({
         where: { id_daily_timetable: dailyTimetableIds },
-        include: [
-          {
-            model: FeeCategory,
-            as: 'feeCategory',
-          },
-        ],
+        include: [{ model: FeeCategory, as: 'feeCategory' }],
       });
 
-      if (!expenseReports || expenseReports.length === 0) {
-        return res.status(404).json({
-          message: 'No ExpenseReports found for the given MensualTimetable ID',
-        });
+      if (!expenseReports.length) {
+        return res.status(200).json([]);
       }
 
-      // Étape 3 : Convertir les documents en base64 et retourner les résultats
-      const result = expenseReports.map((expenseReport) => ({
-        id_expense_report: expenseReport.id_expense_report,
-        id_daily_timetable: expenseReport.id_daily_timetable,
-        id_fee_category: expenseReport.id_fee_category,
-        amount: expenseReport.amount,
-        document_name: expenseReport.document_name,
-        document: expenseReport.document ? Buffer.from(expenseReport.document).toString('base64') : null,
-        client: expenseReport.client,
-        motive: expenseReport.motive,
+      const reportsWithDecodedDocs = expenseReports.map(report => ({
+        ...report.dataValues,
+        document: report.document ? Buffer.from(report.document, 'base64').toString() : null,
       }));
 
-      return res.status(200).json(result);
+      return res.status(200).json(reportsWithDecodedDocs);
     } catch (error) {
-      return res.status(500).json({
-        message: 'Error fetching ExpenseReports',
-        error: error.message,
-      });
+      return res.status(500).json({ message: 'Error fetching ExpenseReports', error: error.message });
     }
   },
 };
