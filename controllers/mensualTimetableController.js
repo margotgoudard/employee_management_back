@@ -1,12 +1,9 @@
 const MensualTimetableSheet = require('../models/MensualTimetableSheet');
-const DailyTimetableSheet = require('../models/DailyTimetableSheet'); 
+const DailyTimetableSheet = require('../models/DailyTimetableSheet');
 const TimeSlot = require('../models/TimeSlot');
 const ExpenseReport = require('../models/ExpenseReport');
-const { calculateWorkedHours } = require('../controllers/dailyTimetableController')
-
-
-
-
+const { calculateWorkedHours } = require('../controllers/dailyTimetableController');
+const { createAudit } = require('./auditController');
 
 // Fonction pour calculer le total des notes de frais d'un mois
 const calculateTotalExpenseNotes = (dailyTimetables) => {
@@ -24,10 +21,24 @@ const mensualTimetableController = {
   createMensualTimetable: async (req, res) => {
     try {
       const { id_user, month, year, comment, commission, status } = req.body;
+      const userId = req.auth.userId;
+
       const mensualTimetable = await MensualTimetableSheet.create({
         id_user, month, year, comment, commission, status
       });
-      return res.status(201).json({ message: 'MensualTimetableSheet created successfully', mensualTimetable });
+
+      await createAudit({
+        table_name: 'mensual_timetable_sheet',
+        action: 'CREATE',
+        old_values: null,
+        new_values: mensualTimetable.dataValues,
+        userId,
+      });
+
+      return res.status(201).json({
+        message: 'MensualTimetableSheet created successfully',
+        mensualTimetable,
+      });
     } catch (error) {
       return res.status(500).json({ message: 'Error creating MensualTimetableSheet', error });
     }
@@ -53,8 +64,6 @@ const mensualTimetableController = {
     }
  },
 
-
-
   getMensualTimetableById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -72,31 +81,64 @@ const mensualTimetableController = {
     try {
       const { id } = req.params;
       const { id_user, month, year, comment, commission, status } = req.body;
+      const userId = req.auth.userId;
+
       const mensualTimetable = await MensualTimetableSheet.findByPk(id);
       if (!mensualTimetable) {
         return res.status(404).json({ message: 'MensualTimetableSheet not found' });
       }
+
+      const oldValues = { ...mensualTimetable.dataValues };
+
       await mensualTimetable.update({ id_user, month, year, comment, commission, status });
-      return res.status(200).json({ message: 'MensualTimetableSheet updated successfully', mensualTimetable });
+
+      
+      await createAudit({
+        table_name: 'mensual_timetable_sheet',
+        action: 'UPDATE',
+        old_values: oldValues,
+        new_values: mensualTimetable.dataValues,
+        userId,
+      });
+
+      return res.status(200).json({
+        message: 'MensualTimetableSheet updated successfully',
+        mensualTimetable,
+      });
     } catch (error) {
       return res.status(500).json({ message: 'Error updating MensualTimetableSheet', error });
     }
   },
-
+  
   deleteMensualTimetable: async (req, res) => {
     try {
       const { id } = req.params;
+      const userId = req.auth.userId;
+
       const mensualTimetable = await MensualTimetableSheet.findByPk(id);
       if (!mensualTimetable) {
         return res.status(404).json({ message: 'MensualTimetableSheet not found' });
       }
+
+      const oldValues = { ...mensualTimetable.dataValues };
+
       await mensualTimetable.destroy();
-      return res.status(200).json({ message: 'MensualTimetableSheet deleted successfully' });
+
+      await createAudit({
+        table_name: 'mensual_timetable_sheet',
+        action: 'DELETE',
+        old_values: oldValues,
+        new_values: null,
+        userId,
+      });
+
+      return res.status(200).json({
+        message: 'MensualTimetableSheet deleted successfully',
+      });
     } catch (error) {
       return res.status(500).json({ message: 'Error deleting MensualTimetableSheet', error });
     }
   },
-
 
   getMensualDailyTimeSlot: async (req, res) => {
     try {
@@ -104,6 +146,7 @@ const mensualTimetableController = {
       if (!id) {
         return res.status(400).json({ message: 'Timetable ID is required' });
       }
+
       const mensualTimetable = await MensualTimetableSheet.findOne({
         where: { id_timetable: id },
         include: [
@@ -119,11 +162,11 @@ const mensualTimetableController = {
           },
         ],
       });
-  
+
       if (!mensualTimetable) {
         return res.status(404).json({ message: 'Mensual Timetable not found' });
       }
-  
+
       return res.status(200).json(mensualTimetable);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -131,15 +174,14 @@ const mensualTimetableController = {
     }
   },
 
-
   getMensualTimetableWithDetails: async (req, res) => {
     try {
       const { id } = req.params;
-  
+
       if (!id) {
         return res.status(400).json({ message: 'Mensual Timetable ID is required' });
       }
-  
+
       const mensualTimetable = await MensualTimetableSheet.findOne({
         where: { id_timetable: id },
         include: [
@@ -159,7 +201,7 @@ const mensualTimetableController = {
           },
         ],
       });
-  
+
       if (!mensualTimetable) {
         return res.status(404).json({ message: 'Mensual Timetable not found' });
       }
@@ -171,26 +213,25 @@ const mensualTimetableController = {
           const workedTimeSlots = dailyTimetable.timeSlots.filter(ts => ts.status === 'Travaillé');
           return total + calculateWorkedHours(workedTimeSlots);
         }
-        return total; 
+        return total;
       }, 0);
-  
+
       const totalExpenseNotes = mensualTimetable.dailyTimetableList.reduce((total, dailyTimetable) => {
         return total + calculateTotalExpenseNotes(dailyTimetable.expenseReports);
       }, 0);
-  
+
       return res.status(200).json({
         mensualTimetable,
-        totalWorkedHours: totalWorkedHours.toFixed(2), 
-        totalExpenseNotes: totalExpenseNotes.toFixed(2), 
+        totalWorkedHours: totalWorkedHours.toFixed(2),
+        totalExpenseNotes: totalExpenseNotes.toFixed(2),
       });
-  
+
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Error fetching Mensual Timetable with details', error });
     }
   }
-  
-  
+
 };
 
 module.exports = mensualTimetableController;
