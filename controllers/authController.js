@@ -3,7 +3,6 @@ const { createTokens } = require("../middleware/auth.js");
 const User = require("../models/User.js");
 const { createAudit } = require('./auditController.js');
 
-
 const login = async (req, res) => {
   try {
     const { mail, password } = req.body;
@@ -16,6 +15,10 @@ const login = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ error: "User not found." });
+    }
+    
+    if (!user.is_activated) {
+      return res.status(403).json({ error: "Your account has been deactivated. Please contact support." });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
