@@ -62,7 +62,7 @@ const expenseReportController = {
       });
 
       if (!expenseReports.length) {
-        return res.status(404).json({ message: 'No ExpenseReports found for the given DailyTimetable ID' });
+        return res.status(200).json([]);
       }
 
       const reportsWithDecodedDocs = expenseReports.map(report => ({
@@ -207,7 +207,7 @@ const expenseReportController = {
       });
 
       if (!expenseReports.length) {
-        return res.status(404).json({ message: 'No ExpenseReports found for the given MensualTimetable ID' });
+        return res.status(200).json([]);
       }
 
       const reportsWithDecodedDocs = expenseReports.map(report => ({

@@ -70,7 +70,7 @@ const timeSlotController = {
       });
 
       if (!timeSlots || timeSlots.length === 0) {
-        return res.status(404).json({ message: 'Aucun TimeSlot trouvé pour cet ID' });
+        return res.status(200).json([]);
       }
 
       return res.status(200).json(timeSlots);
