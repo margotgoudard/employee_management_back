@@ -1,8 +1,10 @@
 const DocumentCategory = require('../models/DocumentCategory');
+const { createAudit } = require('./auditController.js');
 
 const documentCategoryController = {
 
-    createDocumentCategory: async (req, res) => {
+  // Création d'une nouvelle catégorie de document
+  createDocumentCategory: async (req, res) => {
     try {
       const { name } = req.body;
 
@@ -10,17 +12,26 @@ const documentCategoryController = {
         return res.status(400).json({ message: 'Name is required' });
       }
 
-      const Documentcategory = await DocumentCategory.create({ name });
-      return res.status(201).json({ message: 'DocumentCategory created successfully', Documentcategory });
+      const documentCategory = await DocumentCategory.create({ name });
+
+      await createAudit({
+        table_name: 'document_category',
+        action: 'CREATE',
+        old_values: null,
+        new_values: { name: documentCategory.name },
+        userId: req.auth.userId,
+      });
+
+      return res.status(201).json({ message: 'DocumentCategory created successfully', documentCategory });
     } catch (error) {
-      return res.status(500).json({ message: 'Error creating Documentcategory', error });
+      return res.status(500).json({ message: 'Error creating DocumentCategory', error });
     }
   },
 
+  // Récupérer toutes les catégories de documents
   getDocumentCategories: async (req, res) => {
     try {
       const categories = await DocumentCategory.findAll();
-      console.log(categories)
 
       return res.status(200).json(categories);
     } catch (error) {
@@ -28,54 +39,78 @@ const documentCategoryController = {
     }
   },
 
+  // Récupérer une catégorie de document par ID
   getDocumentCategoryById: async (req, res) => {
     try {
-      const { id_Documentcategory } = req.params;
+      const { id_document_category } = req.params;
 
-      const Documentcategory = await DocumentCategory.findByPk(id_Documentcategory);
+      const documentCategory = await DocumentCategory.findByPk(id_document_category);
 
-      if (!Documentcategory) {
+      if (!documentCategory) {
         return res.status(404).json({ message: 'DocumentCategory not found' });
       }
-
-      return res.status(200).json(Documentcategory);
+      return res.status(200).json(documentCategory);
     } catch (error) {
-      return res.status(500).json({ message: 'Error fetching Documentcategory', error });
+      return res.status(500).json({ message: 'Error fetching DocumentCategory', error });
     }
   },
 
+  // Mettre à jour une catégorie de document
   updateDocumentCategory: async (req, res) => {
     try {
-      const { id_Documentcategory } = req.params;
+      const { id_document_category } = req.params;
       const { name } = req.body;
 
-      const Documentcategory = await DocumentCategory.findByPk(id_Documentcategory);
+      const documentCategory = await DocumentCategory.findByPk(id_document_category);
 
-      if (!Documentcategory) {
+      if (!documentCategory) {
         return res.status(404).json({ message: 'DocumentCategory not found' });
       }
 
-      await Documentcategory.update({ name });
-      return res.status(200).json({ message: 'DocumentCategory updated successfully', Documentcategory });
+      const oldValues = { name: documentCategory.name };
+
+      await documentCategory.update({ name });
+
+      await createAudit({
+        table_name: 'document_category',
+        action: 'UPDATE',
+        old_values: oldValues,
+        new_values: { name: documentCategory.name },
+        userId: req.auth.userId, 
+      });
+
+      return res.status(200).json({ message: 'DocumentCategory updated successfully', documentCategory });
     } catch (error) {
-      return res.status(500).json({ message: 'Error updating Documentcategory', error });
+      return res.status(500).json({ message: 'Error updating DocumentCategory', error });
     }
   },
 
+  // Supprimer une catégorie de document
   deleteDocumentCategory: async (req, res) => {
     try {
-      const { id_Documentcategory } = req.params;
+      const { id_document_category } = req.params;
 
-      const Documentcategory = await DocumentCategory.findByPk(id_Documentcategory);
+      const documentCategory = await DocumentCategory.findByPk(id_document_category);
 
-      if (!Documentcategory) {
+      if (!documentCategory) {
         return res.status(404).json({ message: 'DocumentCategory not found' });
       }
 
-      await Documentcategory.destroy();
+      const oldValues = { name: documentCategory.name };
+
+      await documentCategory.destroy();
+
+      await createAudit({
+        table_name: 'document_category',
+        action: 'DELETE',
+        old_values: oldValues,
+        new_values: null,
+        userId: req.auth.userId, 
+      });
+
       return res.status(200).json({ message: 'DocumentCategory deleted successfully' });
     } catch (error) {
-      return res.status(500).json({ message: 'Error deleting Documentcategory', error });
+      return res.status(500).json({ message: 'Error deleting DocumentCategory', error });
     }
   },
 };

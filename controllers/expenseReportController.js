@@ -59,6 +59,12 @@ const expenseReportController = {
 
       const expenseReports = await ExpenseReport.findAll({
         where: { id_daily_timetable: id },
+        include: [
+          {
+            model: FeeCategory,
+            as: 'feeCategory',
+          },
+        ],
       });
 
       if (!expenseReports.length) {

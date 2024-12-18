@@ -67,11 +67,13 @@ const timeSlotController = {
 
       const timeSlots = await TimeSlot.findAll({
         where: { id_daily_time: id },
+        include: [
+          {
+            model: PlaceCategory,
+            as: 'placeCategory',
+          },
+        ],
       });
-
-      if (!timeSlots || timeSlots.length === 0) {
-        return res.status(200).json([]);
-      }
 
       return res.status(200).json(timeSlots);
     } catch (error) {
