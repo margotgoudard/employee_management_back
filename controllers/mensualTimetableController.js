@@ -55,7 +55,7 @@ const mensualTimetableController = {
             where: { id_user: id },
         });
         if (mensualTimetables.length === 0) {
-            return res.status(404).json({ message: 'No MensualTimetable found for the given User ID' });
+          return res.status(200).json([]);
         }
         return res.status(200).json(mensualTimetables); 
     } catch (error) {
