@@ -3,15 +3,15 @@ const { createAudit } = require('./auditController');
 const sequelize = require('../config/sequelize');
 
 const departmentController = {
+
   // Créer un department
   createDepartment: async (req, res) => {
     try {
       const { name, id_sup_department, id_company } = req.body;
-      const userId = req.auth.userId; // Authenticated user ID
+      const userId = req.auth.userId;
 
       const department = await Department.create({ name, id_sup_department, id_company });
 
-      // Créer un audit
       await createAudit({
         table_name: 'department',
         action: 'CREATE',
@@ -73,7 +73,6 @@ const departmentController = {
 
       await department.update({ name, id_sup_department, id_company });
 
-      // Créer un audit
       await createAudit({
         table_name: 'department',
         action: 'UPDATE',
@@ -105,7 +104,6 @@ const departmentController = {
 
       await department.destroy();
 
-      // Créer un audit
       await createAudit({
         table_name: 'department',
         action: 'DELETE',
@@ -120,6 +118,7 @@ const departmentController = {
       return res.status(500).json({ message: 'Error deleting department', error });
     }
   },
+  
   // Récupérer les sous-départements d'un département
   getSubDepartments: async (req, res) => {
     try {
