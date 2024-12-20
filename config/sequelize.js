@@ -1,6 +1,9 @@
 // config/sequelize.js
 const { Sequelize } = require('sequelize');
 
+// A commenter en dev
+// require('dotenv').config();
+
 // Récupérer les informations de connexion à partir des variables d'environnement ou des valeurs par défaut
 const username = process.env.DB_USERNAME || "user";
 const password = process.env.DB_PASSWORD || "user";
