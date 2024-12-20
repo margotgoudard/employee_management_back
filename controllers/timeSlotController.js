@@ -1,5 +1,6 @@
 const TimeSlot = require('../models/TimeSlot');
 const { createAudit } = require('./auditController');
+const PlaceCategory = require('../models/PlaceCategory')
 
 const timeSlotController = {
 
