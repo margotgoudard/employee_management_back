@@ -216,5 +216,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- SELECT create_next_timetables_for_all_users();
--- SELECT create_current_timetables_for_all_users()
+SELECT create_next_timetables_for_all_users();
+SELECT create_current_timetables_for_all_users()
