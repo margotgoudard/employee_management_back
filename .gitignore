@@ -5,7 +5,7 @@ node_modules/
 .env
 .env.prod
 .env.dev
-
+script_prod.bat
 # Fichiers de log
 *.log
 
