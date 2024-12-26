@@ -3,7 +3,9 @@ node_modules/
 
 # Environnement
 .env
-
+.env.prod
+.env.dev
+script_prod.bat
 # Fichiers de log
 *.log
 

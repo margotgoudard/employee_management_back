@@ -81,15 +81,15 @@ User.hasMany(Notification, { foreignKey: 'id_user', as: 'notifications', onDelet
 
 // Relations Subordination et User
 Subordination.belongsTo(User, { foreignKey: 'id_user', as: 'user', onDelete: 'CASCADE' });
-User.hasMany(Subordination, { foreignKey: 'id_user', as: 'subordinations', onDelete: 'CASCADE' });
+User.hasMany(Subordination, { foreignKey: 'id_user', as: 'subordinates', onDelete: 'CASCADE' });
 
 // Relations Subordination et Manager (User)
 Subordination.belongsTo(User, { foreignKey: 'id_manager', as: 'manager', onDelete: 'CASCADE' });
-User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'managed', onDelete: 'CASCADE' });
+User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'manages', onDelete: 'CASCADE' });
 
 // Relations Subordination et Department
 Subordination.belongsTo(Department, { foreignKey: 'id_department', as: 'department', onDelete: 'CASCADE' });
-Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinations', onDelete: 'CASCADE' });
+Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinates', onDelete: 'CASCADE' });
 
 module.exports = {
     User,

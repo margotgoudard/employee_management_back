@@ -45,6 +45,7 @@ const documentCategoryRoutes = require('./routes/documentCategoryRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const authRoutes = require('./routes/authRoutes.js')
 const departmentRoutes = require('./routes/departmentRoutes.js')
+const subordinationRoutes = require('./routes/subordinationRoutes.js')
 
 
 const complianceCheckRoutes = require('./routes/complianceCheckRoutes');
@@ -64,6 +65,7 @@ app.use('/api/document-categories', documentCategoryRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/compliance-checks', complianceCheckRoutes);
+app.use('/api/subordinations', subordinationRoutes)
 
 const complianceCheckController = require('./controllers/complianceCheckController');
 
