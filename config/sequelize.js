@@ -1,26 +1,36 @@
-// config/sequelize.js
-const { Sequelize } = require('sequelize');
+const { Sequelize } = require("sequelize");
+const { createTunnel } = require('tunnel-ssh');
+const fs = require("fs");
+const path = require("path");
 
-// A commenter en dev
-// require('dotenv').config();
-
-// Récupérer les informations de connexion à partir des variables d'environnement ou des valeurs par défaut
-const username = process.env.DB_USERNAME || "user";
-const password = process.env.DB_PASSWORD || "user";
-const host = process.env.DB_HOST || "127.0.0.1";
-const database = process.env.DB_NAME || "pss_employee";
-const port = process.env.DB_PORT || 5432;
-
-// Créer une nouvelle instance Sequelize
-const sequelize = new Sequelize(database, username, password, {
-  host,
-  dialect: 'postgres',
-  port,
-  timezone: '+00:00', 
-  dialectOptions: {
-    useUTC: true, 
-  },
-  logging: false,
+require("dotenv").config({
+  path: path.resolve(__dirname, `../.env.${process.env.NODE_ENV}`),
 });
 
-module.exports =  sequelize ;
+let sequelize;
+
+async function main() {
+  console.log("Mode développement : connexion à la base de données." + process.env.NODE_ENV);
+
+  sequelize = new Sequelize(
+    process.env.DB_NAME,
+    process.env.DB_USERNAME,
+    process.env.DB_PASSWORD,
+    {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      dialect: "postgres",
+      logging: false,
+    }
+  );
+
+  sequelize
+    .authenticate()
+    .then(() => console.log("Connexion à la base de données locale réussie."))
+    .catch((err) => console.error("Erreur de connexion locale :", err));
+} 
+
+
+main();
+
+module.exports = sequelize;

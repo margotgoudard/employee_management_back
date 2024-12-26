@@ -83,7 +83,7 @@ VALUES
     (5, 5, 1, '{"id_parameter": 9, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Durée maximale d’un bloc de travail sans pause
-    (6, 6, 1, '{"id_parameter": 10, "value": 4}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (6, 6, 1, '{"id_parameter": 10, "value": 6}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Minimum de jours de repos par semaine
     (7, 7, 1, '{"id_parameter": 11, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
@@ -216,5 +216,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- SELECT create_next_timetables_for_all_users();
--- SELECT create_current_timetables_for_all_users()
+SELECT create_next_timetables_for_all_users();
+SELECT create_current_timetables_for_all_users()

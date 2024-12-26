@@ -4,7 +4,11 @@ const { sequelizeAuthAndSync } = require('./controllers/connectionDB');
 const helmet = require('helmet');
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+
+const path = require("path");
+require("dotenv").config({
+  path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}`),
+});
 
 const app = express();
 
