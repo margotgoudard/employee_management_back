@@ -3,6 +3,8 @@ node_modules/
 
 # Environnement
 .env
+.env.prod
+.env.dev
 
 # Fichiers de log
 *.log
