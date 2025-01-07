@@ -4,6 +4,7 @@ const TimeSlot = require('../models/TimeSlot');
 const ExpenseReport = require('../models/ExpenseReport');
 const { calculateWorkedHours } = require('../controllers/dailyTimetableController');
 const { createAudit } = require('./auditController');
+const { handleMensualTimetableNotification } = require('../controllers/notificationController')
 
 // Fonction pour calculer le total des notes de frais d'un mois
 const calculateTotalExpenseNotes = (dailyTimetables) => {
@@ -77,38 +78,39 @@ const mensualTimetableController = {
     }
   },
 
-  updateMensualTimetable: async (req, res) => {
+  updateMensualTimetableSheet: async (req, res) => {
     try {
       const { id } = req.params;
-      const { id_user, month, year, comment, commission, status } = req.body;
+      const { status, comment, commission } = req.body;
       const userId = req.auth.userId;
 
-      const mensualTimetable = await MensualTimetableSheet.findByPk(id);
-      if (!mensualTimetable) {
-        return res.status(404).json({ message: 'MensualTimetableSheet not found' });
+      const timetable = await MensualTimetableSheet.findByPk(id);
+      if (!timetable) {
+        return res.status(404).json({ message: 'Mensual timetable sheet not found' });
       }
 
-      const oldValues = { ...mensualTimetable.dataValues };
-
-      await mensualTimetable.update({ id_user, month, year, comment, commission, status });
-
-      
+      const oldValues = { ...timetable.dataValues };
+      await timetable.update({ status, comment, commission });
+      await handleMensualTimetableNotification({
+        status,
+        id_user: timetable.id_user,
+        timetable,
+        userId,
+      });
       await createAudit({
         table_name: 'mensual_timetable_sheet',
         action: 'UPDATE',
         old_values: oldValues,
-        new_values: mensualTimetable.dataValues,
+        new_values: timetable.dataValues,
         userId,
       });
 
-      return res.status(200).json({
-        message: 'MensualTimetableSheet updated successfully',
-        mensualTimetable,
-      });
+      return res.status(200).json({ message: 'Mensual timetable sheet updated successfully', timetable });
     } catch (error) {
-      return res.status(500).json({ message: 'Error updating MensualTimetableSheet', error });
+      return res.status(500).json({ message: 'Error updating mensual timetable sheet', error });
     }
   },
+
   
   deleteMensualTimetable: async (req, res) => {
     try {
