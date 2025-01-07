@@ -151,16 +151,16 @@ const companyController = {
     }
   },
 
+  // TODO ERROR
   getUsersByCompanyId: async (req, res) => {
     try {
       const { id_company } = req.params;
       const company = await Company.findByPk(id_company, {
         include: {
           model: User,
-          through: { attributes: [] },
+          attributes: { exclude: ['password'] },
         },
       });
-
       if (!company) {
         return res.status(404).json({ message: 'Company not found' });
       }

@@ -136,6 +136,7 @@ const subordinationController = {
           {
             model: User,
             as: 'user',
+            attributes: { exclude: ['password'] },
           },
           {
             model: User,
