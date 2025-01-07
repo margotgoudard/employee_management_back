@@ -91,6 +91,11 @@ User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'manages', onDelete:
 Subordination.belongsTo(Department, { foreignKey: 'id_department', as: 'department', onDelete: 'CASCADE' });
 Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinates', onDelete: 'CASCADE' });
 
+// Relations Notification et MensualTimetableSheet
+Notification.belongsTo(MensualTimetableSheet, { foreignKey: 'id_timetable', as: 'mensualTimetable', onDelete: 'SET NULL' });
+MensualTimetableSheet.hasMany(Notification, { foreignKey: 'id_timetable', as: 'notifications', onDelete: 'SET NULL' });
+
+
 module.exports = {
     User,
     Audit,

@@ -16,16 +16,28 @@ Notification.init(
       allowNull: false,
     },
     viewed: {
-      type: DataTypes.BOOLEAN, 
+      type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
     },
+    type: {
+      type: DataTypes.ENUM('warning', 'information', 'success'),
+      allowNull: false,
+    },
     id_user: {
-      type: DataTypes.INTEGER, 
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'user',
         key: 'id_user',
+      },
+    },
+    id_timetable: {
+      type: DataTypes.INTEGER,
+      allowNull: true, 
+      references: {
+        model: 'mensual_timetable_sheet',
+        key: 'id_timetable',
       },
     },
   },

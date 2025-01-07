@@ -300,4 +300,4 @@ const subordinationController = {
   
 };
 
-module.exports = subordinationController;
+module.exports = { subordinationController , getManagerForUser};

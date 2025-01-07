@@ -6,7 +6,7 @@ const { validateToken }= require('../middleware/auth')
 router.post('', validateToken, mensualTimetableController.createMensualTimetable);
 router.get('/user/:id', validateToken, mensualTimetableController.getMensualTimetables);
 router.get('/:id', validateToken, mensualTimetableController.getMensualTimetableById);
-router.put('/:id', validateToken, mensualTimetableController.updateMensualTimetable);
+router.put('/:id', validateToken, mensualTimetableController.updateMensualTimetableSheet);
 router.delete('/:id', validateToken, mensualTimetableController.deleteMensualTimetable);
 
 // Grouped json routes
