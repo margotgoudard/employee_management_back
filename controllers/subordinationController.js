@@ -66,39 +66,47 @@ const getManagerForUser = async (userId) => {
   };
   
   const getSubordinatesRecursive = async (managerId) => {
-    // Trouver les subordonnés directs de ce manager
-    const directSubordinates = await Subordination.findAll({
-      where: { id_manager: managerId },
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: { exclude: ['password'] }, // Exclure le mot de passe
-        },
-        {
-          model: Department,
-          as: 'department', // Inclure les infos du département
-        },
-      ],
-    });
-  
-    let allSubordinates = [...directSubordinates];
-  
-    // Pour chaque subordonné direct, trouver ses subordonnés (récursivement)
-    for (const subordinate of directSubordinates) {
-      const nestedSubordinates = await getSubordinatesRecursive(subordinate.id_user);
-      allSubordinates.push(...nestedSubordinates);
+    try {
+        // Trouver les subordonnés directs de ce manager
+        const directSubordinates = await Subordination.findAll({
+            where: { id_manager: managerId },
+            include: [
+                {
+                    model: User,
+                    as: 'user', 
+                    attributes: { exclude: ['password'] }, 
+                    include: [
+                        {
+                            model: Department, 
+                            as: 'department'
+                        }
+                    ]
+                }
+            ]
+        });
+    
+        let allSubordinates = [...directSubordinates];
+    
+        // Pour chaque subordonné direct, trouver ses subordonnés (récursivement)
+        for (const subordinate of directSubordinates) {
+            const nestedSubordinates = await getSubordinatesRecursive(subordinate.id_user);
+            allSubordinates.push(...nestedSubordinates);
+        }
+    
+        return allSubordinates;
+    } catch (error) {
+        console.error('Error fetching subordinates:', error);
+        throw new Error('Error fetching subordinates');
     }
-  
-    return allSubordinates;
-  };
+};
+
 
 const subordinationController = {
 
   // Créer une subordination
   assignManagerToUser: async (req, res) => {
     try {
-      const { id_user, id_manager, id_department } = req.body;
+      const { id_user, id_manager} = req.body;
       const userId = req.auth.userId; 
       
       const manager = await User.findByPk(id_manager);
@@ -111,13 +119,9 @@ const subordinationController = {
         return res.status(404).json({ message: 'Utilisateur subordonné non trouvé' });
       }
 
-      const department = await Department.findByPk(id_department);
-      if (!department) {
-        return res.status(404).json({ message: 'Département non trouvé' });
-      }
 
       const existingSubordination = await Subordination.findOne({
-        where: { id_user, id_manager, id_department },
+        where: { id_user, id_manager },
       });
 
       if (existingSubordination) {
@@ -127,7 +131,6 @@ const subordinationController = {
       const subordination = await Subordination.create({
         id_user,
         id_manager,
-        id_department,
       });
 
       await createAudit({
@@ -149,30 +152,33 @@ const subordinationController = {
   },
 
   // Obtenir la liste des subordonnés pour un manager dans un département
-  getSubordinatesByManagerAndDepartment : async (req, res) => {
-    const { id_manager, id_department } = req.params;
+  getSubordinatesByManager : async (req, res) => {
+    const { id_manager } = req.params;
   
     try {
       const subordinates = await Subordination.findAll({
         where: {
           id_manager: id_manager,
-          id_department: id_department 
         },
         include: [
           {
             model: User,
             as: 'user',
             attributes: { exclude: ['password'] },
+            include: [
+              {
+                model: Department, 
+                as: 'department',
+                attributes: ['id_department', 'name'], 
+              }
+            ]
           },
           {
             model: User,
             as: 'manager', 
             attributes: ['id_user', 'mail'] 
           },
-          {
-            model: Department,
-            as: 'department', 
-          }
+          
         ]
       });
   
@@ -186,48 +192,14 @@ const subordinationController = {
     }
   },
   
-  // Obtenir tous les départements d'un utilisateur
-  getDepartmentsForUser: async (req, res) => {
-    try {
-      const { id_user } = req.params;
-
-      const user = await User.findByPk(id_user);
-      if (!user) {
-        return res.status(404).json({ message: 'Utilisateur non trouvé' });
-      }
-
-      const subordinates = await Subordination.findAll({
-        where: { id_user },
-        include: [
-          {
-            model: Department,
-            as: 'department',
-            attributes: ['id_department', 'name'], 
-          },
-        ],
-      });
-
-      if (!subordinates.length) {
-        return res.status(404).json({ message: 'L\'utilisateur n\'est dans aucun département' });
-      }
-
-      return res.status(200).json({
-        message: 'Départements récupérés avec succès',
-        subordinates,
-      });
-    } catch (error) {
-      console.error('Erreur lors de la récupération des départements:', error);
-      return res.status(500).json({ message: 'Erreur lors de la récupération des départements', error });
-    }
-  },
 
   removeSubordination: async (req, res) => {
     try {
-      const { id_user, id_manager, id_department } = req.params;
+      const { id_user, id_manager } = req.params;
       const userId = req.auth.userId; 
 
       const subordination = await Subordination.findOne({
-        where: { id_user, id_manager, id_department },
+        where: { id_user, id_manager },
       });
 
       if (!subordination) {
@@ -256,11 +228,11 @@ const subordinationController = {
   // Mettre à jour la subordination (changer le manager d'un utilisateur dans un département)
   updateSubordination: async (req, res) => {
     try {
-      const { id_user, id_manager, id_department } = req.body;
+      const { id_user, id_manager } = req.body;
       const userId = req.auth.userId; 
 
       const subordination = await Subordination.findOne({
-        where: { id_user, id_department },
+        where: { id_user },
       });
 
       if (!subordination) {
@@ -325,7 +297,7 @@ const subordinationController = {
     }
   },
   
-  getAllSubordinatesByManagerAndDepartment : async (req, res) => {
+  getAllSubordinatesByManager : async (req, res) => {
     const { id_manager } = req.params;
   
     try {
@@ -333,7 +305,6 @@ const subordinationController = {
   
       const formattedResult = subordinates.map(sub => ({
         user: sub.user, 
-        department: sub.department, 
       }));
   
       res.status(200).json(formattedResult);

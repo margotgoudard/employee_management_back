@@ -12,10 +12,6 @@ Subordination.init(
       allowNull: false
     },
 
-    id_department: {
-      type: DataTypes.INTEGER,
-      allowNull: false, 
-    },
 
     id_manager: {
       type: DataTypes.INTEGER,

@@ -22,6 +22,7 @@ const userController = {
         country_address,
         is_admin,
         is_sup_admin,
+        id_department
       } = req.body;
       const userId = req.auth.userId;
 
@@ -60,6 +61,7 @@ const userController = {
         country_address,
         is_admin,
         is_sup_admin,
+        id_department
       });
 
       await createAudit({
@@ -88,6 +90,7 @@ const userController = {
           is_admin: user.is_admin,
           is_sup_admin: user.is_sup_admin,
           last_connected: user.last_connected,
+          id_department: user.id_department
         },
       });
     } catch (error) {
@@ -137,7 +140,7 @@ const userController = {
       const {
         first_name, last_name, role, mail, phone, num_address,
         street_address, city_address, area_code_address, region_address, country_address,
-        is_admin, is_sup_admin
+        is_admin, is_sup_admin, id_department
       } = req.body;
       const userId = req.auth.userId;
 
@@ -162,6 +165,7 @@ const userController = {
         country_address,
         is_admin,
         is_sup_admin,
+        id_department
       });
 
       await createAudit({
