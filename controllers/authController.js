@@ -47,7 +47,8 @@ const login = async (req, res) => {
         role: user.role,
         mail: user.mail,
         last_connected: user.last_connected,
-        phone: user.phone
+        phone: user.phone,
+        id_department: user.id_department
       },
     });
   } catch (err) {
