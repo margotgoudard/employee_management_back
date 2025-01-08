@@ -65,7 +65,33 @@ const getManagerForUser = async (userId) => {
     }
   };
   
+  const getSubordinatesRecursive = async (managerId) => {
+    // Trouver les subordonnés directs de ce manager
+    const directSubordinates = await Subordination.findAll({
+      where: { id_manager: managerId },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: { exclude: ['password'] }, // Exclure le mot de passe
+        },
+        {
+          model: Department,
+          as: 'department', // Inclure les infos du département
+        },
+      ],
+    });
   
+    let allSubordinates = [...directSubordinates];
+  
+    // Pour chaque subordonné direct, trouver ses subordonnés (récursivement)
+    for (const subordinate of directSubordinates) {
+      const nestedSubordinates = await getSubordinatesRecursive(subordinate.id_user);
+      allSubordinates.push(...nestedSubordinates);
+    }
+  
+    return allSubordinates;
+  };
 
 const subordinationController = {
 
@@ -295,6 +321,27 @@ const subordinationController = {
       res.status(500).json({
         message: "Erreur lors de la récupération du manager",
         error: error.message
+      });
+    }
+  },
+  
+  getAllSubordinatesByManagerAndDepartment : async (req, res) => {
+    const { id_manager } = req.params;
+  
+    try {
+      const subordinates = await getSubordinatesRecursive(id_manager);
+  
+      const formattedResult = subordinates.map(sub => ({
+        user: sub.user, 
+        department: sub.department, 
+      }));
+  
+      res.status(200).json(formattedResult);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        message: 'Erreur lors de la récupération des subordonnés',
+        error: error.message,
       });
     }
   },

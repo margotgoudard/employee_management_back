@@ -10,5 +10,6 @@ router.delete('/remove/:id_user/:id_manager/:id_department', validateToken, subo
 router.put('/update', validateToken, subordinationController.updateSubordination);
 router.get('/manager-chain/:id', subordinationController.getManagerHierarchy);
 router.get('/manager/user/:id', subordinationController.getManager);
+router.get('/all-subordinates/:id_manager', validateToken, subordinationController.getAllSubordinatesByManagerAndDepartment);
 
 module.exports = router;
