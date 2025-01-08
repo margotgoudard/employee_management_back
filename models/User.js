@@ -75,6 +75,14 @@ User.init(
       allowNull: false,
       defaultValue: true,
     },
+    id_department: {
+      type: DataTypes.INTEGER,
+      allowNull: true, 
+      references: {
+        model: 'department',
+        key: 'id_department',
+      },
+    },
   },
   {
     sequelize,  

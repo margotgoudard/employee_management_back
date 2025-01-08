@@ -75,6 +75,10 @@ ComplianceCheck.hasMany(UserComplianceCheck, { foreignKey: 'id_compliance_check'
 Department.belongsTo(Company, { foreignKey: 'id_company', as: 'company', onDelete: 'CASCADE' });
 Company.hasMany(Department, { foreignKey: 'id_company', as: 'departments', onDelete: 'CASCADE' });
 
+// Relations Department et User
+User.belongsTo(Department, { foreignKey: 'id_department', as: 'department', onDelete: 'CASCADE' });
+Department.hasMany(User, { foreignKey: 'id_department', as: 'users', onDelete: 'CASCADE' });
+
 // Relations Notification et User
 Notification.belongsTo(User, { foreignKey: 'id_user', as: 'user', onDelete: 'CASCADE' });
 User.hasMany(Notification, { foreignKey: 'id_user', as: 'notifications', onDelete: 'CASCADE' });
@@ -87,9 +91,6 @@ User.hasMany(Subordination, { foreignKey: 'id_user', as: 'subordinates', onDelet
 Subordination.belongsTo(User, { foreignKey: 'id_manager', as: 'manager', onDelete: 'CASCADE' });
 User.hasMany(Subordination, { foreignKey: 'id_manager', as: 'manages', onDelete: 'CASCADE' });
 
-// Relations Subordination et Department
-Subordination.belongsTo(Department, { foreignKey: 'id_department', as: 'department', onDelete: 'CASCADE' });
-Department.hasMany(Subordination, { foreignKey: 'id_department', as: 'subordinates', onDelete: 'CASCADE' });
 
 // Relations Notification et MensualTimetableSheet
 Notification.belongsTo(MensualTimetableSheet, { foreignKey: 'id_timetable', as: 'mensualTimetable', onDelete: 'SET NULL' });
