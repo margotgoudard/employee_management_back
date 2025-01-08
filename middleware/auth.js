@@ -15,7 +15,7 @@ const validateToken = (req, res, next) => {
       return res.status(401).json({ error: "Access token missing" });
     }
 
-    const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
+    const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET || 'mysteriousKey');
     const userId = decodedToken.userId;
 
     req.auth = {

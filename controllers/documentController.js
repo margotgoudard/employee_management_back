@@ -280,6 +280,7 @@ const documentController = {
                 documentCategory: doc.documentCategory,
                 id_user: doc.id_user,
                 document: doc.document ? doc.document.toString('base64') : null,
+                updatedAt: doc.updatedAt
             }));
 
             return res.status(200).json(result);
