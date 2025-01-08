@@ -6,35 +6,41 @@ const { createAudit } = require('./auditController.js');
 const documentController = {
     createDocument: async (req, res) => {
         try {
-            const { name, id_document_category, id_user } = req.body;
-
-            if (!name || !id_document_category || !id_user) {
+            const { id_document_category, id_user } = req.body;
+    
+            if (!id_document_category || !id_user) {
                 return res.status(400).json({
-                    message: 'Name, DocumentCategory ID, and User ID are required',
+                    message: 'DocumentCategory ID and User ID are required',
                 });
             }
-
+    
             const Documentcategory = await DocumentCategory.findByPk(id_document_category);
             if (!Documentcategory) {
                 return res.status(404).json({ message: 'DocumentCategory not found' });
             }
-
+    
             const user = await User.findByPk(id_user);
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
-
-            let document = null;
-            if (req.file) {
-                document = req.file.buffer; 
-            } else {
+    
+            if (!req.file) {
                 return res.status(400).json({ message: 'Document file is required' });
             }
-
+    
+            // Extraire le nom complet du fichier avec l'extension
+            const name = req.file.originalname;
+    
+            // Récupérer le contenu du fichier
+            const document = req.file.buffer;
+    
+            // Créer le document dans la base de données
             const newDocument = await Document.create({ name, id_document_category, id_user, document });
-
+    
+            // Encoder le fichier en base64 pour le retourner dans la réponse
             const base64Document = document.toString('base64');
-
+    
+            // Créer un audit de la création
             await createAudit({
                 table_name: 'document',
                 action: 'CREATE',
@@ -46,7 +52,7 @@ const documentController = {
                 },
                 userId: req.auth.userId,
             });
-
+    
             return res.status(201).json({
                 message: 'Document created successfully',
                 document: {
@@ -61,6 +67,7 @@ const documentController = {
             return res.status(500).json({ message: 'Error creating document', error });
         }
     },
+    
 
     getDocuments: async (req, res) => {
       try {
@@ -137,54 +144,77 @@ const documentController = {
     updateDocument: async (req, res) => {
         try {
             const { id_document } = req.params;
-            const { name, id_document_category, id_user } = req.body;
-
+            const { id_document_category, id_user } = req.body;
+    
+            // Rechercher le document existant
             const document = await Document.findByPk(id_document);
-
+    
             if (!document) {
                 return res.status(404).json({ message: 'Document not found' });
             }
-
+    
+            // Sauvegarder les anciennes valeurs pour l'audit
             const oldValues = {
                 name: document.name,
                 id_document_category: document.id_document_category,
                 id_user: document.id_user,
             };
-
+    
+            // Vérification de l'existence de la catégorie de document (si modifiée)
             if (id_document_category) {
                 const Documentcategory = await DocumentCategory.findByPk(id_document_category);
                 if (!Documentcategory) {
                     return res.status(404).json({ message: 'DocumentCategory not found' });
                 }
             }
-
+    
+            // Vérification de l'existence de l'utilisateur (si modifié)
             if (id_user) {
                 const user = await User.findByPk(id_user);
                 if (!user) {
                     return res.status(404).json({ message: 'User not found' });
                 }
             }
-
+    
+            // Mettre à jour le contenu du document (fichier)
             let updatedDocument = document.document;
+            let updatedName = document.name; // Nom par défaut (non modifié)
+    
             if (req.file) {
-                updatedDocument = req.file.buffer;
+                updatedDocument = req.file.buffer; // Met à jour le contenu
+                updatedName = req.file.originalname; // Utilise le nom du fichier uploadé
             }
-
-            await document.update({ name, id_document_category, id_user, document: updatedDocument });
-
+    
+            // Mettre à jour le document avec les nouvelles valeurs
+            await document.update({
+                name: updatedName,
+                id_document_category,
+                id_user,
+                document: updatedDocument,
+            });
+    
+            // Créer une entrée d'audit pour les modifications
             await createAudit({
                 table_name: 'document',
                 action: 'UPDATE',
                 old_values: oldValues,
-                new_values: { name, id_document_category, id_user },
+                new_values: {
+                    name: updatedName,
+                    id_document_category,
+                    id_user,
+                },
                 userId: req.auth.userId,
             });
-
-            return res.status(200).json({ message: 'Document updated successfully', document });
+    
+            return res.status(200).json({
+                message: 'Document updated successfully',
+                document,
+            });
         } catch (error) {
             return res.status(500).json({ message: 'Error updating document', error });
         }
     },
+    
 
     deleteDocument: async (req, res) => {
         try {
