@@ -130,6 +130,78 @@ const notificationController = {
         return res.status(500).json({ message: 'Error deleting notification', error });
         }
     },
+
+    getUserNotifications: async (req, res) => {
+      try {
+        const userId = req.auth.userId;
+    
+        const notifications = await Notification.findAll({
+          where: { id_user: userId },
+          order: [['createdAt', 'DESC']], 
+        });
+    
+        return res.status(200).json(notifications);
+      } catch (error) {
+        console.error('Error fetching user notifications:', error);
+        return res.status(500).json({ message: 'Error fetching user notifications', error });
+      }
+    },
+
+    getNotificationById: async (req, res) => {
+      try {
+        const { id_notification } = req.params;
+        const userId = req.auth.userId;
+    
+        const notification = await Notification.findOne({
+          where: {
+            id_notification,
+            id_user: userId, 
+          },
+        });
+    
+        if (!notification) {
+          return res.status(404).json({ message: 'Notification not found' });
+        }
+    
+        return res.status(200).json(notification);
+      } catch (error) {
+        console.error('Error fetching notification by ID:', error);
+        return res.status(500).json({ message: 'Error fetching notification by ID', error });
+      }
+    },
+    
+    getUnreadNotificationCount: async (req, res) => {
+      try {
+        const userId = req.auth.userId;
+    
+        const unreadCount = await Notification.count({
+          where: { id_user: userId, viewed: false },
+        });
+    
+        return res.status(200).json({ unreadCount });
+      } catch (error) {
+        console.error('Error counting unread notifications:', error);
+        return res.status(500).json({ message: 'Error counting unread notifications', error });
+      }
+    },
+
+    markAllAsViewed: async (req, res) => {
+      try {
+        const userId = req.auth.userId; 
+  
+        await Notification.update(
+          { viewed: true }, 
+          { where: { id_user: userId, viewed: false } } 
+        );
+  
+        return res.status(200).json({ message: 'Toutes les notifications ont été marquées comme vues.' });
+      } catch (error) {
+        console.error('Erreur dans markAllAsViewed:', error);
+        return res.status(500).json({ message: 'Erreur serveur. Veuillez réessayer plus tard.' });
+      }
+    },
+    
+    
 };
 
 module.exports = { notificationController, createNotification, handleMensualTimetableNotification  };
