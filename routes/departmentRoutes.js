@@ -15,4 +15,6 @@ router.get('/:id_department/sub-departments', validateToken, departmentControlle
 // Route pour récupérer les départements d'une company
 router.get('/company/:id_company', validateToken, departmentController.getDepartmentsByCompany);
 
+
+
 module.exports = router;

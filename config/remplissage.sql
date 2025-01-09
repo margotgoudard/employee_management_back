@@ -51,10 +51,29 @@ VALUES
     (11, 7, 'DAYS_OFF', 'number', '1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
--- Test User
-INSERT INTO "user" (id_user, first_name, last_name, role, mail, phone, password, num_address, street_address, city_address, area_code_address, region_address, country_address, is_admin, is_sup_admin, last_connected, "createdAt", "updatedAt")
+-- Test Company
+INSERT INTO public.company (id_company, name, num_address, street_address, city_address, area_code_address, region_address, country_address, logo, "createdAt", "updatedAt") VALUES (1, 'Tech Innovators Inc.', '123', 'Innovation Street', 'San Francisco', '94107', 'California', 'USA', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+-- Test Department
+INSERT INTO public.department (id_department, name, id_sup_department, id_company, "createdAt", "updatedAt") VALUES (1, 'Human Resources', NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+Insert into public.department (id_department, name, id_sup_department, id_company, "createdAt", "updatedAt") VALUES (2, 'Recruitment', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+-- Test User (Employee)
+INSERT INTO "user" (id_user, first_name, last_name, role, mail, phone, password, num_address, street_address, city_address, area_code_address, region_address, country_address, id_department, is_admin, is_sup_admin, last_connected, "createdAt", "updatedAt")
 VALUES
-(1, 'John', 'Doe', 'Employee', 'john.doe@example.com', '1234567890', 'password123', '1', 'Main Street', 'Sample City', '12345', 'Sample Region', 'Sample Country', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+(1, 'John', 'Doe', 'Employee', 'john.doe@example.com', '1234567890', '$2a$10$f4Y1utYWjhawPXG8rj9cGuphSYcOQsMHCw9Wn4myKbsi4VcgkE/mu', '1', 'Main Street', 'Sample City', '12345', 'Sample Region', 'Sample Country', 1, FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Test User (Admin)
+INSERT INTO "user" (id_user, first_name, last_name, role, mail, phone, password, num_address, street_address, city_address, area_code_address, region_address, country_address, id_department, is_admin, is_sup_admin, last_connected, "createdAt", "updatedAt")
+VALUES
+(2, 'Alice', 'Smith', 'Manager', 'alice.smith@example.com', '0987654321', '$2a$10$T6m3p8WYJQF7NjrQro1/4uNcHklRUd7iZNcHjbOYt2QvOLh5R5.m6', '2', 'Manager Street', 'Manager City', '54321', 'Manager Region', 'Manager Country', 1, TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Test Subordination
+INSERT INTO public.subordination (id_subordination, id_manager, id_user, "createdAt", "updatedAt")
+VALUES
+(1, 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 INSERT INTO user_compliance_check (id_user_compliance_check, id_compliance_check, id_user, parameters, "createdAt", "updatedAt")
