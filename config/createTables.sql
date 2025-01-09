@@ -5,7 +5,7 @@
 -- Dumped from database version 16.1
 -- Dumped by pg_dump version 16.1
 
--- Started on 2024-12-16 12:03:54
+-- Started on 2025-01-09 12:15:40
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -20,14 +20,15 @@ SET row_security = off;
 
 ALTER TABLE IF EXISTS ONLY public.user_permission DROP CONSTRAINT IF EXISTS user_permission_id_user_fkey;
 ALTER TABLE IF EXISTS ONLY public.user_permission DROP CONSTRAINT IF EXISTS user_permission_id_permission_fkey;
+ALTER TABLE IF EXISTS ONLY public."user" DROP CONSTRAINT IF EXISTS user_id_department_fkey;
 ALTER TABLE IF EXISTS ONLY public.user_compliance_check DROP CONSTRAINT IF EXISTS user_compliance_check_id_user_fkey;
 ALTER TABLE IF EXISTS ONLY public.user_compliance_check DROP CONSTRAINT IF EXISTS user_compliance_check_id_compliance_check_fkey;
 ALTER TABLE IF EXISTS ONLY public.time_slot DROP CONSTRAINT IF EXISTS time_slot_id_place_category_fkey;
 ALTER TABLE IF EXISTS ONLY public.time_slot DROP CONSTRAINT IF EXISTS time_slot_id_daily_time_fkey;
 ALTER TABLE IF EXISTS ONLY public.subordination DROP CONSTRAINT IF EXISTS subordination_id_user_fkey;
 ALTER TABLE IF EXISTS ONLY public.subordination DROP CONSTRAINT IF EXISTS subordination_id_manager_fkey;
-ALTER TABLE IF EXISTS ONLY public.subordination DROP CONSTRAINT IF EXISTS subordination_id_department_fkey;
 ALTER TABLE IF EXISTS ONLY public.notification DROP CONSTRAINT IF EXISTS notification_id_user_fkey;
+ALTER TABLE IF EXISTS ONLY public.notification DROP CONSTRAINT IF EXISTS notification_id_timetable_fkey;
 ALTER TABLE IF EXISTS ONLY public.mensual_timetable_sheet DROP CONSTRAINT IF EXISTS mensual_timetable_sheet_id_user_fkey;
 ALTER TABLE IF EXISTS ONLY public.expense_report DROP CONSTRAINT IF EXISTS expense_report_id_fee_category_fkey;
 ALTER TABLE IF EXISTS ONLY public.expense_report DROP CONSTRAINT IF EXISTS expense_report_id_daily_timetable_fkey;
@@ -40,6 +41,7 @@ ALTER TABLE IF EXISTS ONLY public.compliance_check_parameter DROP CONSTRAINT IF 
 ALTER TABLE IF EXISTS ONLY public.audit DROP CONSTRAINT IF EXISTS audit_id_user_fkey;
 ALTER TABLE IF EXISTS ONLY public."user" DROP CONSTRAINT IF EXISTS user_pkey;
 ALTER TABLE IF EXISTS ONLY public.user_permission DROP CONSTRAINT IF EXISTS user_permission_pkey;
+ALTER TABLE IF EXISTS ONLY public."user" DROP CONSTRAINT IF EXISTS user_mail_key;
 ALTER TABLE IF EXISTS ONLY public.user_compliance_check DROP CONSTRAINT IF EXISTS user_compliance_check_pkey;
 ALTER TABLE IF EXISTS ONLY public.time_slot DROP CONSTRAINT IF EXISTS time_slot_pkey;
 ALTER TABLE IF EXISTS ONLY public.subordination DROP CONSTRAINT IF EXISTS subordination_pkey;
@@ -112,12 +114,17 @@ DROP SEQUENCE IF EXISTS public.company_id_company_seq;
 DROP TABLE IF EXISTS public.company;
 DROP SEQUENCE IF EXISTS public.audit_id_audit_seq;
 DROP TABLE IF EXISTS public.audit;
+DROP FUNCTION IF EXISTS public.create_next_timetables_for_all_users();
+DROP FUNCTION IF EXISTS public.create_current_timetables_for_all_users();
+DROP FUNCTION IF EXISTS public.create_next_month_timetables(id_user integer);
+DROP FUNCTION IF EXISTS public.create_current_month_timetables(id_user integer);
 DROP TYPE IF EXISTS public.enum_time_slot_status;
+DROP TYPE IF EXISTS public.enum_notification_type;
 DROP TYPE IF EXISTS public.enum_mensual_timetable_sheet_status;
 DROP TYPE IF EXISTS public.enum_daily_timetable_sheet_status;
 DROP TYPE IF EXISTS public.enum_compliance_check_parameter_type;
 --
--- TOC entry 929 (class 1247 OID 79211)
+-- TOC entry 933 (class 1247 OID 79537)
 -- Name: enum_compliance_check_parameter_type; Type: TYPE; Schema: public; Owner: user
 --
 
@@ -131,7 +138,7 @@ CREATE TYPE public.enum_compliance_check_parameter_type AS ENUM (
 ALTER TYPE public.enum_compliance_check_parameter_type OWNER TO "user";
 
 --
--- TOC entry 902 (class 1247 OID 79082)
+-- TOC entry 906 (class 1247 OID 79408)
 -- Name: enum_daily_timetable_sheet_status; Type: TYPE; Schema: public; Owner: user
 --
 
@@ -149,7 +156,7 @@ CREATE TYPE public.enum_daily_timetable_sheet_status AS ENUM (
 ALTER TYPE public.enum_daily_timetable_sheet_status OWNER TO "user";
 
 --
--- TOC entry 896 (class 1247 OID 79061)
+-- TOC entry 900 (class 1247 OID 79386)
 -- Name: enum_mensual_timetable_sheet_status; Type: TYPE; Schema: public; Owner: user
 --
 
@@ -163,7 +170,21 @@ CREATE TYPE public.enum_mensual_timetable_sheet_status AS ENUM (
 ALTER TYPE public.enum_mensual_timetable_sheet_status OWNER TO "user";
 
 --
--- TOC entry 876 (class 1247 OID 78257)
+-- TOC entry 879 (class 1247 OID 79306)
+-- Name: enum_notification_type; Type: TYPE; Schema: public; Owner: user
+--
+
+CREATE TYPE public.enum_notification_type AS ENUM (
+    'warning',
+    'information',
+    'success'
+);
+
+
+ALTER TYPE public.enum_notification_type OWNER TO "user";
+
+--
+-- TOC entry 948 (class 1247 OID 78257)
 -- Name: enum_time_slot_status; Type: TYPE; Schema: public; Owner: user
 --
 
@@ -177,12 +198,110 @@ CREATE TYPE public.enum_time_slot_status AS ENUM (
 
 ALTER TYPE public.enum_time_slot_status OWNER TO "user";
 
+--
+-- TOC entry 264 (class 1255 OID 79303)
+-- Name: create_current_month_timetables(integer); Type: FUNCTION; Schema: public; Owner: user
+--
+
+CREATE FUNCTION public.create_current_month_timetables(id_user integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    next_month DATE := DATE_TRUNC('month', CURRENT_DATE);
+    month_start DATE := DATE_TRUNC('month', next_month);
+    month_end DATE := (DATE_TRUNC('month', next_month) + INTERVAL '1 month - 1 day')::DATE;
+    current_day DATE;
+    day_of_week INTEGER;
+    status TEXT;
+    new_timetable_id INTEGER;
+    daily_timetable_id INTEGER;
+BEGIN
+    -- Insérer le mensal time table pour le mois suivant
+    INSERT INTO mensual_timetable_sheet (id_user, month, year, status, "createdAt", "updatedAt")
+    VALUES (id_user, EXTRACT(MONTH FROM next_month), EXTRACT(YEAR FROM next_month), 'À compléter', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    RETURNING id_timetable INTO new_timetable_id;
+
+    -- Créer les daily time tables pour chaque jour du mois suivant
+    current_day := month_start;
+    WHILE current_day <= month_end LOOP
+        -- Calculer le jour de la semaine (1 = lundi, 7 = dimanche)
+        day_of_week := EXTRACT(DOW FROM current_day);
+
+        -- Déterminer le statut par défaut (week-end ou travaillé)
+        IF day_of_week IN (6, 0) THEN -- 6 = samedi, 0 = dimanche
+            status := 'Week-end';
+        ELSE
+            status := 'Travaillé';
+        END IF;
+
+        -- Insérer le daily timetable sheet
+        INSERT INTO daily_timetable_sheet (id_timetable, day, status, on_call_duty,is_completed, "createdAt", "updatedAt")
+        VALUES (new_timetable_id, current_day, status::enum_daily_timetable_sheet_status, FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING id_daily_timetable INTO daily_timetable_id;
+
+        -- Si le statut est 'Travaillé', insérer deux timeslots par défaut
+        IF status = 'Travaillé' THEN
+            INSERT INTO time_slot (id_daily_time, id_place_category, status, start, "end", "createdAt", "updatedAt")
+            VALUES 
+                (daily_timetable_id, 1, 'Travaillé', '08:00', '12:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                (daily_timetable_id, 1, 'Travaillé', '13:00', '18:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+        END IF;
+
+        -- Avancer d'un jour
+        current_day := current_day + INTERVAL '1 day';
+    END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION public.create_current_month_timetables(id_user integer) OWNER TO "user";
+
+--
+-- TOC entry 265 (class 1255 OID 79304)
+-- Name: create_current_timetables_for_all_users(); Type: FUNCTION; Schema: public; Owner: user
+--
+
+CREATE FUNCTION public.create_current_timetables_for_all_users() RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    user_id INTEGER;
+BEGIN
+    FOR user_id IN SELECT id_user FROM "user" LOOP
+        PERFORM create_current_month_timetables(user_id);
+    END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION public.create_current_timetables_for_all_users() OWNER TO "user";
+
+--
+-- TOC entry 263 (class 1255 OID 79302)
+-- Name: create_next_timetables_for_all_users(); Type: FUNCTION; Schema: public; Owner: user
+--
+
+CREATE FUNCTION public.create_next_timetables_for_all_users() RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    user_id INTEGER;
+BEGIN
+    FOR user_id IN SELECT id_user FROM "user" LOOP
+        PERFORM create_next_month_timetables(user_id);
+    END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION public.create_next_timetables_for_all_users() OWNER TO "user";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- TOC entry 218 (class 1259 OID 79024)
+-- TOC entry 222 (class 1259 OID 79358)
 -- Name: audit; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -201,7 +320,7 @@ CREATE TABLE public.audit (
 ALTER TABLE public.audit OWNER TO "user";
 
 --
--- TOC entry 217 (class 1259 OID 79023)
+-- TOC entry 221 (class 1259 OID 79357)
 -- Name: audit_id_audit_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -217,8 +336,8 @@ CREATE SEQUENCE public.audit_id_audit_seq
 ALTER SEQUENCE public.audit_id_audit_seq OWNER TO "user";
 
 --
--- TOC entry 5052 (class 0 OID 0)
--- Dependencies: 217
+-- TOC entry 5061 (class 0 OID 0)
+-- Dependencies: 221
 -- Name: audit_id_audit_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -226,7 +345,7 @@ ALTER SEQUENCE public.audit_id_audit_seq OWNED BY public.audit.id_audit;
 
 
 --
--- TOC entry 220 (class 1259 OID 79038)
+-- TOC entry 216 (class 1259 OID 79315)
 -- Name: company; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -248,7 +367,7 @@ CREATE TABLE public.company (
 ALTER TABLE public.company OWNER TO "user";
 
 --
--- TOC entry 219 (class 1259 OID 79037)
+-- TOC entry 215 (class 1259 OID 79314)
 -- Name: company_id_company_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -264,8 +383,8 @@ CREATE SEQUENCE public.company_id_company_seq
 ALTER SEQUENCE public.company_id_company_seq OWNER TO "user";
 
 --
--- TOC entry 5053 (class 0 OID 0)
--- Dependencies: 219
+-- TOC entry 5062 (class 0 OID 0)
+-- Dependencies: 215
 -- Name: company_id_company_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -273,7 +392,7 @@ ALTER SEQUENCE public.company_id_company_seq OWNED BY public.company.id_company;
 
 
 --
--- TOC entry 240 (class 1259 OID 79183)
+-- TOC entry 242 (class 1259 OID 79509)
 -- Name: compliance_check; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -290,7 +409,7 @@ CREATE TABLE public.compliance_check (
 ALTER TABLE public.compliance_check OWNER TO "user";
 
 --
--- TOC entry 239 (class 1259 OID 79182)
+-- TOC entry 241 (class 1259 OID 79508)
 -- Name: compliance_check_id_compliance_check_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -306,8 +425,8 @@ CREATE SEQUENCE public.compliance_check_id_compliance_check_seq
 ALTER SEQUENCE public.compliance_check_id_compliance_check_seq OWNER TO "user";
 
 --
--- TOC entry 5054 (class 0 OID 0)
--- Dependencies: 239
+-- TOC entry 5063 (class 0 OID 0)
+-- Dependencies: 241
 -- Name: compliance_check_id_compliance_check_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -315,7 +434,7 @@ ALTER SEQUENCE public.compliance_check_id_compliance_check_seq OWNED BY public.c
 
 
 --
--- TOC entry 244 (class 1259 OID 79218)
+-- TOC entry 246 (class 1259 OID 79544)
 -- Name: compliance_check_parameter; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -333,7 +452,7 @@ CREATE TABLE public.compliance_check_parameter (
 ALTER TABLE public.compliance_check_parameter OWNER TO "user";
 
 --
--- TOC entry 243 (class 1259 OID 79217)
+-- TOC entry 245 (class 1259 OID 79543)
 -- Name: compliance_check_parameter_id_parameter_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -349,8 +468,8 @@ CREATE SEQUENCE public.compliance_check_parameter_id_parameter_seq
 ALTER SEQUENCE public.compliance_check_parameter_id_parameter_seq OWNER TO "user";
 
 --
--- TOC entry 5055 (class 0 OID 0)
--- Dependencies: 243
+-- TOC entry 5064 (class 0 OID 0)
+-- Dependencies: 245
 -- Name: compliance_check_parameter_id_parameter_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -358,7 +477,7 @@ ALTER SEQUENCE public.compliance_check_parameter_id_parameter_seq OWNED BY publi
 
 
 --
--- TOC entry 228 (class 1259 OID 79098)
+-- TOC entry 230 (class 1259 OID 79424)
 -- Name: daily_timetable_sheet; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -378,7 +497,7 @@ CREATE TABLE public.daily_timetable_sheet (
 ALTER TABLE public.daily_timetable_sheet OWNER TO "user";
 
 --
--- TOC entry 227 (class 1259 OID 79097)
+-- TOC entry 229 (class 1259 OID 79423)
 -- Name: daily_timetable_sheet_id_daily_timetable_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -394,8 +513,8 @@ CREATE SEQUENCE public.daily_timetable_sheet_id_daily_timetable_seq
 ALTER SEQUENCE public.daily_timetable_sheet_id_daily_timetable_seq OWNER TO "user";
 
 --
--- TOC entry 5056 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 5065 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: daily_timetable_sheet_id_daily_timetable_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -403,7 +522,7 @@ ALTER SEQUENCE public.daily_timetable_sheet_id_daily_timetable_seq OWNED BY publ
 
 
 --
--- TOC entry 246 (class 1259 OID 79232)
+-- TOC entry 218 (class 1259 OID 79324)
 -- Name: department; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -420,7 +539,7 @@ CREATE TABLE public.department (
 ALTER TABLE public.department OWNER TO "user";
 
 --
--- TOC entry 245 (class 1259 OID 79231)
+-- TOC entry 217 (class 1259 OID 79323)
 -- Name: department_id_department_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -436,8 +555,8 @@ CREATE SEQUENCE public.department_id_department_seq
 ALTER SEQUENCE public.department_id_department_seq OWNER TO "user";
 
 --
--- TOC entry 5057 (class 0 OID 0)
--- Dependencies: 245
+-- TOC entry 5066 (class 0 OID 0)
+-- Dependencies: 217
 -- Name: department_id_department_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -445,7 +564,7 @@ ALTER SEQUENCE public.department_id_department_seq OWNED BY public.department.id
 
 
 --
--- TOC entry 238 (class 1259 OID 79164)
+-- TOC entry 240 (class 1259 OID 79490)
 -- Name: document; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -463,7 +582,7 @@ CREATE TABLE public.document (
 ALTER TABLE public.document OWNER TO "user";
 
 --
--- TOC entry 236 (class 1259 OID 79157)
+-- TOC entry 238 (class 1259 OID 79483)
 -- Name: document_category; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -478,7 +597,7 @@ CREATE TABLE public.document_category (
 ALTER TABLE public.document_category OWNER TO "user";
 
 --
--- TOC entry 235 (class 1259 OID 79156)
+-- TOC entry 237 (class 1259 OID 79482)
 -- Name: document_category_id_category_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -494,8 +613,8 @@ CREATE SEQUENCE public.document_category_id_category_seq
 ALTER SEQUENCE public.document_category_id_category_seq OWNER TO "user";
 
 --
--- TOC entry 5058 (class 0 OID 0)
--- Dependencies: 235
+-- TOC entry 5067 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: document_category_id_category_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -503,7 +622,7 @@ ALTER SEQUENCE public.document_category_id_category_seq OWNED BY public.document
 
 
 --
--- TOC entry 237 (class 1259 OID 79163)
+-- TOC entry 239 (class 1259 OID 79489)
 -- Name: document_id_document_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -519,8 +638,8 @@ CREATE SEQUENCE public.document_id_document_seq
 ALTER SEQUENCE public.document_id_document_seq OWNER TO "user";
 
 --
--- TOC entry 5059 (class 0 OID 0)
--- Dependencies: 237
+-- TOC entry 5068 (class 0 OID 0)
+-- Dependencies: 239
 -- Name: document_id_document_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -528,7 +647,7 @@ ALTER SEQUENCE public.document_id_document_seq OWNED BY public.document.id_docum
 
 
 --
--- TOC entry 230 (class 1259 OID 79112)
+-- TOC entry 232 (class 1259 OID 79438)
 -- Name: expense_report; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -538,7 +657,7 @@ CREATE TABLE public.expense_report (
     id_daily_timetable integer NOT NULL,
     amount double precision NOT NULL,
     document_name character varying(255),
-    document bytea NOT NULL,
+    document bytea,
     client character varying(255),
     motive character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
@@ -549,7 +668,7 @@ CREATE TABLE public.expense_report (
 ALTER TABLE public.expense_report OWNER TO "user";
 
 --
--- TOC entry 229 (class 1259 OID 79111)
+-- TOC entry 231 (class 1259 OID 79437)
 -- Name: expense_report_id_expense_report_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -565,8 +684,8 @@ CREATE SEQUENCE public.expense_report_id_expense_report_seq
 ALTER SEQUENCE public.expense_report_id_expense_report_seq OWNER TO "user";
 
 --
--- TOC entry 5060 (class 0 OID 0)
--- Dependencies: 229
+-- TOC entry 5069 (class 0 OID 0)
+-- Dependencies: 231
 -- Name: expense_report_id_expense_report_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -574,7 +693,7 @@ ALTER SEQUENCE public.expense_report_id_expense_report_seq OWNED BY public.expen
 
 
 --
--- TOC entry 222 (class 1259 OID 79047)
+-- TOC entry 224 (class 1259 OID 79372)
 -- Name: fee_category; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -589,7 +708,7 @@ CREATE TABLE public.fee_category (
 ALTER TABLE public.fee_category OWNER TO "user";
 
 --
--- TOC entry 221 (class 1259 OID 79046)
+-- TOC entry 223 (class 1259 OID 79371)
 -- Name: fee_category_id_fee_category_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -605,8 +724,8 @@ CREATE SEQUENCE public.fee_category_id_fee_category_seq
 ALTER SEQUENCE public.fee_category_id_fee_category_seq OWNER TO "user";
 
 --
--- TOC entry 5061 (class 0 OID 0)
--- Dependencies: 221
+-- TOC entry 5070 (class 0 OID 0)
+-- Dependencies: 223
 -- Name: fee_category_id_fee_category_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -614,7 +733,7 @@ ALTER SEQUENCE public.fee_category_id_fee_category_seq OWNED BY public.fee_categ
 
 
 --
--- TOC entry 226 (class 1259 OID 79068)
+-- TOC entry 228 (class 1259 OID 79394)
 -- Name: mensual_timetable_sheet; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -634,7 +753,7 @@ CREATE TABLE public.mensual_timetable_sheet (
 ALTER TABLE public.mensual_timetable_sheet OWNER TO "user";
 
 --
--- TOC entry 225 (class 1259 OID 79067)
+-- TOC entry 227 (class 1259 OID 79393)
 -- Name: mensual_timetable_sheet_id_timetable_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -650,8 +769,8 @@ CREATE SEQUENCE public.mensual_timetable_sheet_id_timetable_seq
 ALTER SEQUENCE public.mensual_timetable_sheet_id_timetable_seq OWNER TO "user";
 
 --
--- TOC entry 5062 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 5071 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: mensual_timetable_sheet_id_timetable_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -659,7 +778,7 @@ ALTER SEQUENCE public.mensual_timetable_sheet_id_timetable_seq OWNED BY public.m
 
 
 --
--- TOC entry 248 (class 1259 OID 79249)
+-- TOC entry 248 (class 1259 OID 79558)
 -- Name: notification; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -667,7 +786,9 @@ CREATE TABLE public.notification (
     id_notification integer NOT NULL,
     content character varying(500) NOT NULL,
     viewed boolean DEFAULT false NOT NULL,
+    type public.enum_notification_type NOT NULL,
     id_user integer NOT NULL,
+    id_timetable integer,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL
 );
@@ -676,7 +797,7 @@ CREATE TABLE public.notification (
 ALTER TABLE public.notification OWNER TO "user";
 
 --
--- TOC entry 247 (class 1259 OID 79248)
+-- TOC entry 247 (class 1259 OID 79557)
 -- Name: notification_id_notification_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -692,7 +813,7 @@ CREATE SEQUENCE public.notification_id_notification_seq
 ALTER SEQUENCE public.notification_id_notification_seq OWNER TO "user";
 
 --
--- TOC entry 5063 (class 0 OID 0)
+-- TOC entry 5072 (class 0 OID 0)
 -- Dependencies: 247
 -- Name: notification_id_notification_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
@@ -701,7 +822,7 @@ ALTER SEQUENCE public.notification_id_notification_seq OWNED BY public.notificat
 
 
 --
--- TOC entry 234 (class 1259 OID 79150)
+-- TOC entry 236 (class 1259 OID 79476)
 -- Name: permission; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -716,7 +837,7 @@ CREATE TABLE public.permission (
 ALTER TABLE public.permission OWNER TO "user";
 
 --
--- TOC entry 233 (class 1259 OID 79149)
+-- TOC entry 235 (class 1259 OID 79475)
 -- Name: permission_id_permission_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -732,8 +853,8 @@ CREATE SEQUENCE public.permission_id_permission_seq
 ALTER SEQUENCE public.permission_id_permission_seq OWNER TO "user";
 
 --
--- TOC entry 5064 (class 0 OID 0)
--- Dependencies: 233
+-- TOC entry 5073 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: permission_id_permission_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -741,7 +862,7 @@ ALTER SEQUENCE public.permission_id_permission_seq OWNED BY public.permission.id
 
 
 --
--- TOC entry 224 (class 1259 OID 79054)
+-- TOC entry 226 (class 1259 OID 79379)
 -- Name: place_category; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -756,7 +877,7 @@ CREATE TABLE public.place_category (
 ALTER TABLE public.place_category OWNER TO "user";
 
 --
--- TOC entry 223 (class 1259 OID 79053)
+-- TOC entry 225 (class 1259 OID 79378)
 -- Name: place_category_id_place_category_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -772,8 +893,8 @@ CREATE SEQUENCE public.place_category_id_place_category_seq
 ALTER SEQUENCE public.place_category_id_place_category_seq OWNER TO "user";
 
 --
--- TOC entry 5065 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 5074 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: place_category_id_place_category_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -781,13 +902,12 @@ ALTER SEQUENCE public.place_category_id_place_category_seq OWNED BY public.place
 
 
 --
--- TOC entry 250 (class 1259 OID 79264)
+-- TOC entry 250 (class 1259 OID 79578)
 -- Name: subordination; Type: TABLE; Schema: public; Owner: user
 --
 
 CREATE TABLE public.subordination (
     id_subordination integer NOT NULL,
-    id_department integer NOT NULL,
     id_manager integer NOT NULL,
     id_user integer NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
@@ -798,7 +918,7 @@ CREATE TABLE public.subordination (
 ALTER TABLE public.subordination OWNER TO "user";
 
 --
--- TOC entry 249 (class 1259 OID 79263)
+-- TOC entry 249 (class 1259 OID 79577)
 -- Name: subordination_id_subordination_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -814,7 +934,7 @@ CREATE SEQUENCE public.subordination_id_subordination_seq
 ALTER SEQUENCE public.subordination_id_subordination_seq OWNER TO "user";
 
 --
--- TOC entry 5066 (class 0 OID 0)
+-- TOC entry 5075 (class 0 OID 0)
 -- Dependencies: 249
 -- Name: subordination_id_subordination_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
@@ -823,7 +943,7 @@ ALTER SEQUENCE public.subordination_id_subordination_seq OWNED BY public.subordi
 
 
 --
--- TOC entry 232 (class 1259 OID 79131)
+-- TOC entry 234 (class 1259 OID 79457)
 -- Name: time_slot; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -848,7 +968,7 @@ CREATE TABLE public.time_slot (
 ALTER TABLE public.time_slot OWNER TO "user";
 
 --
--- TOC entry 231 (class 1259 OID 79130)
+-- TOC entry 233 (class 1259 OID 79456)
 -- Name: time_slot_id_time_slot_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -864,8 +984,8 @@ CREATE SEQUENCE public.time_slot_id_time_slot_seq
 ALTER SEQUENCE public.time_slot_id_time_slot_seq OWNER TO "user";
 
 --
--- TOC entry 5067 (class 0 OID 0)
--- Dependencies: 231
+-- TOC entry 5076 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: time_slot_id_time_slot_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -873,7 +993,7 @@ ALTER SEQUENCE public.time_slot_id_time_slot_seq OWNED BY public.time_slot.id_ti
 
 
 --
--- TOC entry 216 (class 1259 OID 79014)
+-- TOC entry 220 (class 1259 OID 79341)
 -- Name: user; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -895,6 +1015,7 @@ CREATE TABLE public."user" (
     is_sup_admin boolean NOT NULL,
     last_connected timestamp with time zone,
     is_activated boolean DEFAULT true NOT NULL,
+    id_department integer,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL
 );
@@ -903,7 +1024,7 @@ CREATE TABLE public."user" (
 ALTER TABLE public."user" OWNER TO "user";
 
 --
--- TOC entry 242 (class 1259 OID 79192)
+-- TOC entry 244 (class 1259 OID 79518)
 -- Name: user_compliance_check; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -920,7 +1041,7 @@ CREATE TABLE public.user_compliance_check (
 ALTER TABLE public.user_compliance_check OWNER TO "user";
 
 --
--- TOC entry 241 (class 1259 OID 79191)
+-- TOC entry 243 (class 1259 OID 79517)
 -- Name: user_compliance_check_id_user_compliance_check_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -936,8 +1057,8 @@ CREATE SEQUENCE public.user_compliance_check_id_user_compliance_check_seq
 ALTER SEQUENCE public.user_compliance_check_id_user_compliance_check_seq OWNER TO "user";
 
 --
--- TOC entry 5068 (class 0 OID 0)
--- Dependencies: 241
+-- TOC entry 5077 (class 0 OID 0)
+-- Dependencies: 243
 -- Name: user_compliance_check_id_user_compliance_check_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -945,7 +1066,7 @@ ALTER SEQUENCE public.user_compliance_check_id_user_compliance_check_seq OWNED B
 
 
 --
--- TOC entry 215 (class 1259 OID 79013)
+-- TOC entry 219 (class 1259 OID 79340)
 -- Name: user_id_user_seq; Type: SEQUENCE; Schema: public; Owner: user
 --
 
@@ -961,8 +1082,8 @@ CREATE SEQUENCE public.user_id_user_seq
 ALTER SEQUENCE public.user_id_user_seq OWNER TO "user";
 
 --
--- TOC entry 5069 (class 0 OID 0)
--- Dependencies: 215
+-- TOC entry 5078 (class 0 OID 0)
+-- Dependencies: 219
 -- Name: user_id_user_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
 --
 
@@ -970,7 +1091,7 @@ ALTER SEQUENCE public.user_id_user_seq OWNED BY public."user".id_user;
 
 
 --
--- TOC entry 251 (class 1259 OID 79285)
+-- TOC entry 251 (class 1259 OID 79594)
 -- Name: user_permission; Type: TABLE; Schema: public; Owner: user
 --
 
@@ -985,7 +1106,7 @@ CREATE TABLE public.user_permission (
 ALTER TABLE public.user_permission OWNER TO "user";
 
 --
--- TOC entry 4791 (class 2604 OID 79027)
+-- TOC entry 4799 (class 2604 OID 79361)
 -- Name: audit id_audit; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -993,7 +1114,7 @@ ALTER TABLE ONLY public.audit ALTER COLUMN id_audit SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 4792 (class 2604 OID 79041)
+-- TOC entry 4795 (class 2604 OID 79318)
 -- Name: company id_company; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1001,7 +1122,7 @@ ALTER TABLE ONLY public.company ALTER COLUMN id_company SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 4802 (class 2604 OID 79186)
+-- TOC entry 4809 (class 2604 OID 79512)
 -- Name: compliance_check id_compliance_check; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1009,7 +1130,7 @@ ALTER TABLE ONLY public.compliance_check ALTER COLUMN id_compliance_check SET DE
 
 
 --
--- TOC entry 4804 (class 2604 OID 79221)
+-- TOC entry 4811 (class 2604 OID 79547)
 -- Name: compliance_check_parameter id_parameter; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1017,7 +1138,7 @@ ALTER TABLE ONLY public.compliance_check_parameter ALTER COLUMN id_parameter SET
 
 
 --
--- TOC entry 4796 (class 2604 OID 79101)
+-- TOC entry 4803 (class 2604 OID 79427)
 -- Name: daily_timetable_sheet id_daily_timetable; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1025,7 +1146,7 @@ ALTER TABLE ONLY public.daily_timetable_sheet ALTER COLUMN id_daily_timetable SE
 
 
 --
--- TOC entry 4805 (class 2604 OID 79235)
+-- TOC entry 4796 (class 2604 OID 79327)
 -- Name: department id_department; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1033,7 +1154,7 @@ ALTER TABLE ONLY public.department ALTER COLUMN id_department SET DEFAULT nextva
 
 
 --
--- TOC entry 4801 (class 2604 OID 79167)
+-- TOC entry 4808 (class 2604 OID 79493)
 -- Name: document id_document; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1041,7 +1162,7 @@ ALTER TABLE ONLY public.document ALTER COLUMN id_document SET DEFAULT nextval('p
 
 
 --
--- TOC entry 4800 (class 2604 OID 79160)
+-- TOC entry 4807 (class 2604 OID 79486)
 -- Name: document_category id_category; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1049,7 +1170,7 @@ ALTER TABLE ONLY public.document_category ALTER COLUMN id_category SET DEFAULT n
 
 
 --
--- TOC entry 4797 (class 2604 OID 79115)
+-- TOC entry 4804 (class 2604 OID 79441)
 -- Name: expense_report id_expense_report; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1057,7 +1178,7 @@ ALTER TABLE ONLY public.expense_report ALTER COLUMN id_expense_report SET DEFAUL
 
 
 --
--- TOC entry 4793 (class 2604 OID 79050)
+-- TOC entry 4800 (class 2604 OID 79375)
 -- Name: fee_category id_fee_category; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1065,7 +1186,7 @@ ALTER TABLE ONLY public.fee_category ALTER COLUMN id_fee_category SET DEFAULT ne
 
 
 --
--- TOC entry 4795 (class 2604 OID 79071)
+-- TOC entry 4802 (class 2604 OID 79397)
 -- Name: mensual_timetable_sheet id_timetable; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1073,7 +1194,7 @@ ALTER TABLE ONLY public.mensual_timetable_sheet ALTER COLUMN id_timetable SET DE
 
 
 --
--- TOC entry 4806 (class 2604 OID 79252)
+-- TOC entry 4812 (class 2604 OID 79561)
 -- Name: notification id_notification; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1081,7 +1202,7 @@ ALTER TABLE ONLY public.notification ALTER COLUMN id_notification SET DEFAULT ne
 
 
 --
--- TOC entry 4799 (class 2604 OID 79153)
+-- TOC entry 4806 (class 2604 OID 79479)
 -- Name: permission id_permission; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1089,7 +1210,7 @@ ALTER TABLE ONLY public.permission ALTER COLUMN id_permission SET DEFAULT nextva
 
 
 --
--- TOC entry 4794 (class 2604 OID 79057)
+-- TOC entry 4801 (class 2604 OID 79382)
 -- Name: place_category id_place_category; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1097,7 +1218,7 @@ ALTER TABLE ONLY public.place_category ALTER COLUMN id_place_category SET DEFAUL
 
 
 --
--- TOC entry 4808 (class 2604 OID 79267)
+-- TOC entry 4814 (class 2604 OID 79581)
 -- Name: subordination id_subordination; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1105,7 +1226,7 @@ ALTER TABLE ONLY public.subordination ALTER COLUMN id_subordination SET DEFAULT 
 
 
 --
--- TOC entry 4798 (class 2604 OID 79134)
+-- TOC entry 4805 (class 2604 OID 79460)
 -- Name: time_slot id_time_slot; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1113,7 +1234,7 @@ ALTER TABLE ONLY public.time_slot ALTER COLUMN id_time_slot SET DEFAULT nextval(
 
 
 --
--- TOC entry 4789 (class 2604 OID 79017)
+-- TOC entry 4797 (class 2604 OID 79344)
 -- Name: user id_user; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1121,7 +1242,7 @@ ALTER TABLE ONLY public."user" ALTER COLUMN id_user SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 4803 (class 2604 OID 79195)
+-- TOC entry 4810 (class 2604 OID 79521)
 -- Name: user_compliance_check id_user_compliance_check; Type: DEFAULT; Schema: public; Owner: user
 --
 
@@ -1129,359 +1250,7 @@ ALTER TABLE ONLY public.user_compliance_check ALTER COLUMN id_user_compliance_ch
 
 
 --
--- TOC entry 5013 (class 0 OID 79024)
--- Dependencies: 218
--- Data for Name: audit; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.audit (id_audit, table_name, action, old_values, new_values, id_user, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5015 (class 0 OID 79038)
--- Dependencies: 220
--- Data for Name: company; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.company (id_company, name, num_address, street_address, city_address, area_code_address, region_address, country_address, logo, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5035 (class 0 OID 79183)
--- Dependencies: 240
--- Data for Name: compliance_check; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.compliance_check (id_compliance_check, name, description, function_code, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5039 (class 0 OID 79218)
--- Dependencies: 244
--- Data for Name: compliance_check_parameter; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.compliance_check_parameter (id_parameter, id_compliance_check, name, default_value, type, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5023 (class 0 OID 79098)
--- Dependencies: 228
--- Data for Name: daily_timetable_sheet; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.daily_timetable_sheet (id_daily_timetable, id_timetable, day, status, comment, on_call_duty, is_completed, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5041 (class 0 OID 79232)
--- Dependencies: 246
--- Data for Name: department; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.department (id_department, name, id_sup_department, id_company, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5033 (class 0 OID 79164)
--- Dependencies: 238
--- Data for Name: document; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.document (id_document, document, name, id_user, "createdAt", "updatedAt", id_document_category) FROM stdin;
-\.
-
-
---
--- TOC entry 5031 (class 0 OID 79157)
--- Dependencies: 236
--- Data for Name: document_category; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.document_category (id_category, name, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5025 (class 0 OID 79112)
--- Dependencies: 230
--- Data for Name: expense_report; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.expense_report (id_expense_report, id_fee_category, id_daily_timetable, amount, document_name, document, client, motive, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5017 (class 0 OID 79047)
--- Dependencies: 222
--- Data for Name: fee_category; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.fee_category (id_fee_category, name, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5021 (class 0 OID 79068)
--- Dependencies: 226
--- Data for Name: mensual_timetable_sheet; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.mensual_timetable_sheet (id_timetable, id_user, month, year, comment, commission, status, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5043 (class 0 OID 79249)
--- Dependencies: 248
--- Data for Name: notification; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.notification (id_notification, content, viewed, id_user, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5029 (class 0 OID 79150)
--- Dependencies: 234
--- Data for Name: permission; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.permission (id_permission, name, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5019 (class 0 OID 79054)
--- Dependencies: 224
--- Data for Name: place_category; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.place_category (id_place_category, name, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5045 (class 0 OID 79264)
--- Dependencies: 250
--- Data for Name: subordination; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.subordination (id_subordination, id_department, id_manager, id_user, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5027 (class 0 OID 79131)
--- Dependencies: 232
--- Data for Name: time_slot; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.time_slot (id_time_slot, id_daily_time, id_place_category, status, start, "end", num_address, street_address, city_address, area_code_address, region_address, country_address, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5011 (class 0 OID 79014)
--- Dependencies: 216
--- Data for Name: user; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public."user" (id_user, first_name, last_name, role, mail, phone, password, num_address, street_address, city_address, area_code_address, region_address, country_address, is_admin, is_sup_admin, last_connected, is_activated, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5037 (class 0 OID 79192)
--- Dependencies: 242
--- Data for Name: user_compliance_check; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.user_compliance_check (id_user_compliance_check, id_compliance_check, id_user, parameters, "createdAt", "updatedAt") FROM stdin;
-\.
-
-
---
--- TOC entry 5046 (class 0 OID 79285)
--- Dependencies: 251
--- Data for Name: user_permission; Type: TABLE DATA; Schema: public; Owner: user
---
-
-COPY public.user_permission ("createdAt", "updatedAt", id_user, id_permission) FROM stdin;
-\.
-
-
---
--- TOC entry 5070 (class 0 OID 0)
--- Dependencies: 217
--- Name: audit_id_audit_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.audit_id_audit_seq', 1, false);
-
-
---
--- TOC entry 5071 (class 0 OID 0)
--- Dependencies: 219
--- Name: company_id_company_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.company_id_company_seq', 1, false);
-
-
---
--- TOC entry 5072 (class 0 OID 0)
--- Dependencies: 239
--- Name: compliance_check_id_compliance_check_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.compliance_check_id_compliance_check_seq', 1, false);
-
-
---
--- TOC entry 5073 (class 0 OID 0)
--- Dependencies: 243
--- Name: compliance_check_parameter_id_parameter_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.compliance_check_parameter_id_parameter_seq', 1, false);
-
-
---
--- TOC entry 5074 (class 0 OID 0)
--- Dependencies: 227
--- Name: daily_timetable_sheet_id_daily_timetable_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.daily_timetable_sheet_id_daily_timetable_seq', 1, false);
-
-
---
--- TOC entry 5075 (class 0 OID 0)
--- Dependencies: 245
--- Name: department_id_department_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.department_id_department_seq', 1, false);
-
-
---
--- TOC entry 5076 (class 0 OID 0)
--- Dependencies: 235
--- Name: document_category_id_category_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.document_category_id_category_seq', 1, false);
-
-
---
--- TOC entry 5077 (class 0 OID 0)
--- Dependencies: 237
--- Name: document_id_document_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.document_id_document_seq', 1, false);
-
-
---
--- TOC entry 5078 (class 0 OID 0)
--- Dependencies: 229
--- Name: expense_report_id_expense_report_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.expense_report_id_expense_report_seq', 1, false);
-
-
---
--- TOC entry 5079 (class 0 OID 0)
--- Dependencies: 221
--- Name: fee_category_id_fee_category_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.fee_category_id_fee_category_seq', 1, false);
-
-
---
--- TOC entry 5080 (class 0 OID 0)
--- Dependencies: 225
--- Name: mensual_timetable_sheet_id_timetable_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.mensual_timetable_sheet_id_timetable_seq', 1, false);
-
-
---
--- TOC entry 5081 (class 0 OID 0)
--- Dependencies: 247
--- Name: notification_id_notification_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.notification_id_notification_seq', 1, false);
-
-
---
--- TOC entry 5082 (class 0 OID 0)
--- Dependencies: 233
--- Name: permission_id_permission_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.permission_id_permission_seq', 1, false);
-
-
---
--- TOC entry 5083 (class 0 OID 0)
--- Dependencies: 223
--- Name: place_category_id_place_category_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.place_category_id_place_category_seq', 1, false);
-
-
---
--- TOC entry 5084 (class 0 OID 0)
--- Dependencies: 249
--- Name: subordination_id_subordination_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.subordination_id_subordination_seq', 1, false);
-
-
---
--- TOC entry 5085 (class 0 OID 0)
--- Dependencies: 231
--- Name: time_slot_id_time_slot_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.time_slot_id_time_slot_seq', 1, false);
-
-
---
--- TOC entry 5086 (class 0 OID 0)
--- Dependencies: 241
--- Name: user_compliance_check_id_user_compliance_check_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.user_compliance_check_id_user_compliance_check_seq', 1, false);
-
-
---
--- TOC entry 5087 (class 0 OID 0)
--- Dependencies: 215
--- Name: user_id_user_seq; Type: SEQUENCE SET; Schema: public; Owner: user
---
-
-SELECT pg_catalog.setval('public.user_id_user_seq', 1, false);
-
-
---
--- TOC entry 4812 (class 2606 OID 79031)
+-- TOC entry 4824 (class 2606 OID 79365)
 -- Name: audit audit_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1490,7 +1259,7 @@ ALTER TABLE ONLY public.audit
 
 
 --
--- TOC entry 4814 (class 2606 OID 79045)
+-- TOC entry 4816 (class 2606 OID 79322)
 -- Name: company company_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1499,7 +1268,7 @@ ALTER TABLE ONLY public.company
 
 
 --
--- TOC entry 4838 (class 2606 OID 79225)
+-- TOC entry 4848 (class 2606 OID 79551)
 -- Name: compliance_check_parameter compliance_check_parameter_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1508,7 +1277,7 @@ ALTER TABLE ONLY public.compliance_check_parameter
 
 
 --
--- TOC entry 4834 (class 2606 OID 79190)
+-- TOC entry 4844 (class 2606 OID 79516)
 -- Name: compliance_check compliance_check_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1517,7 +1286,7 @@ ALTER TABLE ONLY public.compliance_check
 
 
 --
--- TOC entry 4822 (class 2606 OID 79105)
+-- TOC entry 4832 (class 2606 OID 79431)
 -- Name: daily_timetable_sheet daily_timetable_sheet_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1526,7 +1295,7 @@ ALTER TABLE ONLY public.daily_timetable_sheet
 
 
 --
--- TOC entry 4840 (class 2606 OID 79237)
+-- TOC entry 4818 (class 2606 OID 79329)
 -- Name: department department_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1535,7 +1304,7 @@ ALTER TABLE ONLY public.department
 
 
 --
--- TOC entry 4830 (class 2606 OID 79162)
+-- TOC entry 4840 (class 2606 OID 79488)
 -- Name: document_category document_category_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1544,7 +1313,7 @@ ALTER TABLE ONLY public.document_category
 
 
 --
--- TOC entry 4832 (class 2606 OID 79171)
+-- TOC entry 4842 (class 2606 OID 79497)
 -- Name: document document_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1553,7 +1322,7 @@ ALTER TABLE ONLY public.document
 
 
 --
--- TOC entry 4824 (class 2606 OID 79119)
+-- TOC entry 4834 (class 2606 OID 79445)
 -- Name: expense_report expense_report_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1562,7 +1331,7 @@ ALTER TABLE ONLY public.expense_report
 
 
 --
--- TOC entry 4816 (class 2606 OID 79052)
+-- TOC entry 4826 (class 2606 OID 79377)
 -- Name: fee_category fee_category_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1571,7 +1340,7 @@ ALTER TABLE ONLY public.fee_category
 
 
 --
--- TOC entry 4820 (class 2606 OID 79075)
+-- TOC entry 4830 (class 2606 OID 79401)
 -- Name: mensual_timetable_sheet mensual_timetable_sheet_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1580,7 +1349,7 @@ ALTER TABLE ONLY public.mensual_timetable_sheet
 
 
 --
--- TOC entry 4842 (class 2606 OID 79257)
+-- TOC entry 4850 (class 2606 OID 79566)
 -- Name: notification notification_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1589,7 +1358,7 @@ ALTER TABLE ONLY public.notification
 
 
 --
--- TOC entry 4828 (class 2606 OID 79155)
+-- TOC entry 4838 (class 2606 OID 79481)
 -- Name: permission permission_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1598,7 +1367,7 @@ ALTER TABLE ONLY public.permission
 
 
 --
--- TOC entry 4818 (class 2606 OID 79059)
+-- TOC entry 4828 (class 2606 OID 79384)
 -- Name: place_category place_category_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1607,7 +1376,7 @@ ALTER TABLE ONLY public.place_category
 
 
 --
--- TOC entry 4844 (class 2606 OID 79269)
+-- TOC entry 4852 (class 2606 OID 79583)
 -- Name: subordination subordination_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1616,7 +1385,7 @@ ALTER TABLE ONLY public.subordination
 
 
 --
--- TOC entry 4826 (class 2606 OID 79138)
+-- TOC entry 4836 (class 2606 OID 79464)
 -- Name: time_slot time_slot_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1625,7 +1394,7 @@ ALTER TABLE ONLY public.time_slot
 
 
 --
--- TOC entry 4836 (class 2606 OID 79199)
+-- TOC entry 4846 (class 2606 OID 79525)
 -- Name: user_compliance_check user_compliance_check_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1634,7 +1403,16 @@ ALTER TABLE ONLY public.user_compliance_check
 
 
 --
--- TOC entry 4846 (class 2606 OID 79289)
+-- TOC entry 4820 (class 2606 OID 79351)
+-- Name: user user_mail_key; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public."user"
+    ADD CONSTRAINT user_mail_key UNIQUE (mail);
+
+
+--
+-- TOC entry 4854 (class 2606 OID 79598)
 -- Name: user_permission user_permission_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1643,7 +1421,7 @@ ALTER TABLE ONLY public.user_permission
 
 
 --
--- TOC entry 4810 (class 2606 OID 79022)
+-- TOC entry 4822 (class 2606 OID 79349)
 -- Name: user user_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1652,7 +1430,7 @@ ALTER TABLE ONLY public."user"
 
 
 --
--- TOC entry 4847 (class 2606 OID 79032)
+-- TOC entry 4858 (class 2606 OID 79366)
 -- Name: audit audit_id_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1661,7 +1439,7 @@ ALTER TABLE ONLY public.audit
 
 
 --
--- TOC entry 4858 (class 2606 OID 79226)
+-- TOC entry 4869 (class 2606 OID 79552)
 -- Name: compliance_check_parameter compliance_check_parameter_id_compliance_check_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1670,7 +1448,7 @@ ALTER TABLE ONLY public.compliance_check_parameter
 
 
 --
--- TOC entry 4849 (class 2606 OID 79106)
+-- TOC entry 4860 (class 2606 OID 79432)
 -- Name: daily_timetable_sheet daily_timetable_sheet_id_timetable_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1679,7 +1457,7 @@ ALTER TABLE ONLY public.daily_timetable_sheet
 
 
 --
--- TOC entry 4859 (class 2606 OID 79243)
+-- TOC entry 4855 (class 2606 OID 79335)
 -- Name: department department_id_company_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1688,7 +1466,7 @@ ALTER TABLE ONLY public.department
 
 
 --
--- TOC entry 4860 (class 2606 OID 79238)
+-- TOC entry 4856 (class 2606 OID 79330)
 -- Name: department department_id_sup_department_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1697,7 +1475,7 @@ ALTER TABLE ONLY public.department
 
 
 --
--- TOC entry 4854 (class 2606 OID 79177)
+-- TOC entry 4865 (class 2606 OID 79503)
 -- Name: document document_id_document_category_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1706,7 +1484,7 @@ ALTER TABLE ONLY public.document
 
 
 --
--- TOC entry 4855 (class 2606 OID 79172)
+-- TOC entry 4866 (class 2606 OID 79498)
 -- Name: document document_id_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1715,7 +1493,7 @@ ALTER TABLE ONLY public.document
 
 
 --
--- TOC entry 4850 (class 2606 OID 79125)
+-- TOC entry 4861 (class 2606 OID 79451)
 -- Name: expense_report expense_report_id_daily_timetable_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1724,7 +1502,7 @@ ALTER TABLE ONLY public.expense_report
 
 
 --
--- TOC entry 4851 (class 2606 OID 79120)
+-- TOC entry 4862 (class 2606 OID 79446)
 -- Name: expense_report expense_report_id_fee_category_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1733,7 +1511,7 @@ ALTER TABLE ONLY public.expense_report
 
 
 --
--- TOC entry 4848 (class 2606 OID 79076)
+-- TOC entry 4859 (class 2606 OID 79402)
 -- Name: mensual_timetable_sheet mensual_timetable_sheet_id_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1742,7 +1520,16 @@ ALTER TABLE ONLY public.mensual_timetable_sheet
 
 
 --
--- TOC entry 4861 (class 2606 OID 79258)
+-- TOC entry 4870 (class 2606 OID 79572)
+-- Name: notification notification_id_timetable_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.notification
+    ADD CONSTRAINT notification_id_timetable_fkey FOREIGN KEY (id_timetable) REFERENCES public.mensual_timetable_sheet(id_timetable) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4871 (class 2606 OID 79567)
 -- Name: notification notification_id_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1751,16 +1538,7 @@ ALTER TABLE ONLY public.notification
 
 
 --
--- TOC entry 4862 (class 2606 OID 79270)
--- Name: subordination subordination_id_department_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
---
-
-ALTER TABLE ONLY public.subordination
-    ADD CONSTRAINT subordination_id_department_fkey FOREIGN KEY (id_department) REFERENCES public.department(id_department) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- TOC entry 4863 (class 2606 OID 79275)
+-- TOC entry 4872 (class 2606 OID 79584)
 -- Name: subordination subordination_id_manager_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1769,7 +1547,7 @@ ALTER TABLE ONLY public.subordination
 
 
 --
--- TOC entry 4864 (class 2606 OID 79280)
+-- TOC entry 4873 (class 2606 OID 79589)
 -- Name: subordination subordination_id_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1778,7 +1556,7 @@ ALTER TABLE ONLY public.subordination
 
 
 --
--- TOC entry 4852 (class 2606 OID 79139)
+-- TOC entry 4863 (class 2606 OID 79465)
 -- Name: time_slot time_slot_id_daily_time_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1787,7 +1565,7 @@ ALTER TABLE ONLY public.time_slot
 
 
 --
--- TOC entry 4853 (class 2606 OID 79144)
+-- TOC entry 4864 (class 2606 OID 79470)
 -- Name: time_slot time_slot_id_place_category_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1796,7 +1574,7 @@ ALTER TABLE ONLY public.time_slot
 
 
 --
--- TOC entry 4856 (class 2606 OID 79200)
+-- TOC entry 4867 (class 2606 OID 79526)
 -- Name: user_compliance_check user_compliance_check_id_compliance_check_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1805,7 +1583,7 @@ ALTER TABLE ONLY public.user_compliance_check
 
 
 --
--- TOC entry 4857 (class 2606 OID 79205)
+-- TOC entry 4868 (class 2606 OID 79531)
 -- Name: user_compliance_check user_compliance_check_id_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1814,7 +1592,16 @@ ALTER TABLE ONLY public.user_compliance_check
 
 
 --
--- TOC entry 4865 (class 2606 OID 79295)
+-- TOC entry 4857 (class 2606 OID 79352)
+-- Name: user user_id_department_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public."user"
+    ADD CONSTRAINT user_id_department_fkey FOREIGN KEY (id_department) REFERENCES public.department(id_department) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4874 (class 2606 OID 79604)
 -- Name: user_permission user_permission_id_permission_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1823,7 +1610,7 @@ ALTER TABLE ONLY public.user_permission
 
 
 --
--- TOC entry 4866 (class 2606 OID 79290)
+-- TOC entry 4875 (class 2606 OID 79599)
 -- Name: user_permission user_permission_id_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -1831,7 +1618,7 @@ ALTER TABLE ONLY public.user_permission
     ADD CONSTRAINT user_permission_id_user_fkey FOREIGN KEY (id_user) REFERENCES public."user"(id_user) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
--- Completed on 2024-12-16 12:03:54
+-- Completed on 2025-01-09 12:15:40
 
 --
 -- PostgreSQL database dump complete
