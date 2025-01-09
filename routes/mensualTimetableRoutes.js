@@ -13,6 +13,7 @@ router.delete('/:id', validateToken, mensualTimetableController.deleteMensualTim
 // les plages horaires de tous les jours pour un mois donné (id_timetable)
 router.get('/all-timeslot-day-month/:id', validateToken, mensualTimetableController.getMensualDailyTimeSlot);
 router.get('/all-details-month/:id', validateToken, mensualTimetableController.getMensualTimetableWithDetails);
+router.get('/worked-hours/:id', validateToken, mensualTimetableController.getMensualTimetableWorkedHours);
 
 
 module.exports = router;

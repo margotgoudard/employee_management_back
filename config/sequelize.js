@@ -10,7 +10,7 @@ require("dotenv").config({
 let sequelize;
 
 async function main() {
-  console.log("Mode développement : connexion à la base de données." + process.env.NODE_ENV);
+  console.log("Mode développement : connexion à la base de données ." + process.env.NODE_ENV);
 
   sequelize = new Sequelize(
     process.env.DB_NAME,

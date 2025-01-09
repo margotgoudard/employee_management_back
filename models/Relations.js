@@ -24,8 +24,8 @@ Audit.belongsTo(User, { foreignKey: 'id_user', as: 'user' });
 User.hasMany(Audit, { foreignKey: 'id_user', as: 'audits', onDelete: 'CASCADE' });
 
 // Relations TimeSlot et DailyTimetableSheet
-TimeSlot.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_time', as: 'dailyTime', onDelete: 'CASCADE' });
-DailyTimetableSheet.hasMany(TimeSlot, { foreignKey: 'id_daily_time', as: 'timeSlots', onDelete: 'CASCADE' });
+TimeSlot.belongsTo(DailyTimetableSheet, { foreignKey: 'id_daily_timetable', as: 'dailyTime', onDelete: 'CASCADE' });
+DailyTimetableSheet.hasMany(TimeSlot, { foreignKey: 'id_daily_timetable', as: 'timeSlots', onDelete: 'CASCADE' });
 
 // Relations TimeSlot et PlaceCategory
 TimeSlot.belongsTo(PlaceCategory, { foreignKey: 'id_place_category', as: 'placeCategory', onDelete: 'CASCADE' });

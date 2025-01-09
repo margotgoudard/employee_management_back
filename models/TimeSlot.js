@@ -10,7 +10,7 @@ TimeSlot.init(
       primaryKey: true,
       autoIncrement: true,
     },
-    id_daily_time: {
+    id_daily_timetable: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {

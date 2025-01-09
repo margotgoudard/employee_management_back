@@ -199,7 +199,7 @@ const dailyTimetableController = {
 
       const timeSlots = await TimeSlot.findAll({
         where: {
-          id_daily_time: id,
+          id_daily_timetable: id,
           status: 'Travaillé',
         },
       });

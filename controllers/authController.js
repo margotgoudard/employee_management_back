@@ -16,7 +16,7 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found." });
     }
-    
+
     if (!user.is_activated) {
       return res.status(403).json({ error: "Your account has been deactivated. Please contact support." });
     }
@@ -52,7 +52,7 @@ const login = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: "An error occurred during login." });
+    res.status(500).json({ error: "An error occurred during login."+err });
   }
 };
 

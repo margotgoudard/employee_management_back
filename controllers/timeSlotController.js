@@ -8,7 +8,7 @@ const timeSlotController = {
   createTimeSlot: async (req, res) => {
     try {
       const {
-        id_daily_time,
+        id_daily_timetable,
         id_place_category,
         status,
         start,
@@ -20,16 +20,15 @@ const timeSlotController = {
         region_address,
         country_address,
       } = req.body;
-      const userId = req.auth.userId; 
 
-      if (!id_daily_time || !id_place_category || !status || !start || !end) {
+      const userId = req.auth.userId; 
+      if (!id_daily_timetable || !id_place_category || !status || !start || !end) {
         return res.status(400).json({
-          message: 'Les champs id_daily_time, id_place_category, status, start et end sont obligatoires',
+          message: 'Les champs id_daily_timetable, id_place_category, status, start et end sont obligatoires',
         });
       }
-
       const timeSlot = await TimeSlot.create({
-        id_daily_time,
+        id_daily_timetable,
         id_place_category,
         status,
         start,
@@ -67,7 +66,7 @@ const timeSlotController = {
       }
 
       const timeSlots = await TimeSlot.findAll({
-        where: { id_daily_time: id },
+        where: { id_daily_timetable: id },
         include: [
           {
             model: PlaceCategory,
@@ -105,7 +104,7 @@ const timeSlotController = {
     try {
       const { id } = req.params;
       const {
-        id_daily_time,
+        id_daily_timetable,
         id_place_category,
         status,
         start,
@@ -127,7 +126,7 @@ const timeSlotController = {
       const oldValues = { ...timeSlot.dataValues }; 
 
       await timeSlot.update({
-        id_daily_time,
+        id_daily_timetable,
         id_place_category,
         status,
         start,

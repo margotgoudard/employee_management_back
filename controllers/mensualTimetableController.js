@@ -232,6 +232,45 @@ const mensualTimetableController = {
       console.error(error);
       return res.status(500).json({ message: 'Error fetching Mensual Timetable with details', error });
     }
+  },
+
+  getMensualTimetableWorkedHours: async (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'Timetable ID is required' });
+    }
+
+    const mensualTimetable = await MensualTimetableSheet.findOne({
+      where: { id_timetable: id },
+      include: [
+        {
+          model: DailyTimetableSheet,
+          as: 'dailyTimetables',
+          include: [
+            {
+              model: TimeSlot,
+              as: 'timeSlots',
+            },
+          ],
+        },
+      ],
+    });
+  
+    if (!mensualTimetable) {
+      console.error('Mensual timetable not found.');
+      return;
+    }
+
+    const dailyTimetablesTravaille = mensualTimetable.dailyTimetables.filter((daily) => daily.status == 'Travaillé' || daily.status == 'Demi-journée');
+    const totalHours = dailyTimetablesTravaille.reduce((total, daily) => {
+      return total + daily.timeSlots.reduce((subTotal, slot) => {
+        if (slot.status != 'Travaillé') return subTotal;
+        const duration = (new Date(`1970-01-01T${slot.end}`) - new Date(`1970-01-01T${slot.start}`)) / 3600000;
+        return subTotal + duration;
+      }, 0);
+    }, 0);
+
+    return res.status(200).json({ totalHours });
   }
 
 };
