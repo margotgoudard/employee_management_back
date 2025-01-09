@@ -68,7 +68,7 @@ VALUES
 -- Test User (Admin)
 INSERT INTO "user" (id_user, first_name, last_name, role, mail, phone, password, num_address, street_address, city_address, area_code_address, region_address, country_address, id_department, is_admin, is_sup_admin, last_connected, "createdAt", "updatedAt")
 VALUES
-(2, 'Alice', 'Smith', 'Manager', 'alice.smith@example.com', '0987654321', '$2a$10$T6m3p8WYJQF7NjrQro1/4uNcHklRUd7iZNcHjbOYt2QvOLh5R5.m6', '2', 'Manager Street', 'Manager City', '54321', 'Manager Region', 'Manager Country', 1, TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+(2, 'Alice', 'Smith', 'Manager', 'alice.smith@example.com', '0987654321', '$2a$10$f4Y1utYWjhawPXG8rj9cGuphSYcOQsMHCw9Wn4myKbsi4VcgkE/mu', '2', 'Manager Street', 'Manager City', '54321', 'Manager Region', 'Manager Country', 1, TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Test Subordination
 INSERT INTO public.subordination (id_subordination, id_manager, id_user, "createdAt", "updatedAt")
