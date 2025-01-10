@@ -301,7 +301,7 @@ const userController = {
         !first_name || !last_name || !role || !mail || !phone || !password ||
         !num_address || !street_address || !city_address || !area_code_address ||
         !region_address || !country_address ||
-        typeof is_admin !== 'boolean' || typeof is_sup_admin !== 'boolean' || !id_manager
+        typeof is_admin !== 'boolean' || typeof is_sup_admin !== 'boolean'
       ) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
