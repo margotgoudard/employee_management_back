@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { createAudit } = require('./auditController');
+const Subordination = require('../models/Subordination');
 
 const userController = {
 
@@ -272,6 +273,115 @@ const userController = {
       return res.status(500).json({ message: 'Error changing password', error });
     }
   },
+
+  createUserByManager: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        first_name,
+        last_name,
+        role,
+        mail,
+        phone,
+        password,
+        num_address,
+        street_address,
+        city_address,
+        area_code_address,
+        region_address,
+        country_address,
+        is_admin,
+        is_sup_admin,
+        id_department,
+      } = req.body;
+
+      const userId = req.auth.userId;
+
+      if (
+        !first_name || !last_name || !role || !mail || !phone || !password ||
+        !num_address || !street_address || !city_address || !area_code_address ||
+        !region_address || !country_address ||
+        typeof is_admin !== 'boolean' || typeof is_sup_admin !== 'boolean' || !id_manager
+      ) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(mail)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+      }
+
+      const phoneRegex = /^\+?\d{10,15}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ message: 'Invalid phone number format' });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const user = await User.create({
+        first_name,
+        last_name,
+        role,
+        mail,
+        phone,
+        password: hashedPassword,
+        num_address,
+        street_address,
+        city_address,
+        area_code_address,
+        region_address,
+        country_address,
+        is_admin,
+        is_sup_admin,
+        id_department
+      });
+
+      await Subordination.create({
+        id_manager: id,
+        id_user: user.id_user,
+      });
+
+      await createAudit({
+        table_name: 'user',
+        action: 'CREATE_BY_MANAGER',
+        old_values: null,
+        new_values: user.dataValues,
+        userId,
+      });
+
+      return res.status(201).json({
+        message: 'User created successfully and linked to manager',
+        user: {
+          id_user: user.id_user,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          mail: user.mail,
+          phone: user.phone,
+          num_address: user.num_address,
+          street_address: user.street_address,
+          city_address: user.city_address,
+          area_code_address: user.area_code_address,
+          region_address: user.region_address,
+          country_address: user.country_address,
+          is_admin: user.is_admin,
+          is_sup_admin: user.is_sup_admin,
+          last_connected: user.last_connected,
+          id_department: user.id_department
+        },
+      });
+    } catch (error) {
+      console.error('Error creating user by manager:', error);
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(409).json({
+          message: 'The provided email is already in use. Please use a different email.',
+        });
+      }
+
+      return res.status(500).json({ message: 'Error creating user by manager', error });
+    }
+  },
+
 };
 
 module.exports = userController;
