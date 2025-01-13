@@ -56,8 +56,8 @@ INSERT INTO public.company (id_company, name, num_address, street_address, city_
 
 
 -- Test Department
-INSERT INTO public.department (id_department, name, id_sup_department, id_company, "createdAt", "updatedAt") VALUES (1, 'Human Resources', NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-Insert into public.department (id_department, name, id_sup_department, id_company, "createdAt", "updatedAt") VALUES (2, 'Recruitment', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO public.department ( name, id_sup_department, id_company, "createdAt", "updatedAt") VALUES ('Human Resources', NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+Insert into public.department ( name, id_sup_department, id_company, "createdAt", "updatedAt") VALUES ('Recruitment', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- Test User (Employee)
