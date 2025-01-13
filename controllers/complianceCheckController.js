@@ -32,7 +32,7 @@ const complianceCheckController = {
       const { id } = req.params;
       console.log('Checking compliance for timetable:', id);
       const violations = await checkEachRule(id);
-      console.log('**************Violations:', violations);
+      // console.log('**************Violations:', violations);
       return res.status(200).json(violations);
     } catch (error) {
       console.error('Error during compliance check:', error);
@@ -82,37 +82,52 @@ const complianceCheckController = {
     ],
   });
 
-  // console.log('Checking compliance rule:', userComplianceChecks);
   var violations = {};
+
+  const updateViolations = (newViolations) => {
+    Object.entries(newViolations).forEach(([date, message]) => {
+      const formattedDate = new Date(date).toISOString();
+  
+      if (!violations[formattedDate]) {
+        violations[formattedDate] = [];
+      }
+
+      if (!violations[formattedDate].includes(message)) {
+        violations[formattedDate].push(message);
+      }
+    });
+  };
+  
+
   for (const ucc of userComplianceChecks) {
    const parameters = ucc.parameters;
    const complianceCheck = ucc.complianceCheck;
    console.log('Checking compliance rule:', ucc.complianceCheck.function_code, 'with parameters:', parameters);
-    switch (ucc.complianceCheck.function_code) {
-      case 'DAILY_HOUR':
-        violations['DAILY_HOUR'] = await checkDailyHour(mensualTimetable, [parameters], complianceCheck);
-        break;
-      case 'HEBDO_HOUR':
-        violations['HEBDO_HOUR'] = await checkWeeklyHour(mensualTimetable, [parameters], complianceCheck);
-        break;
-      case 'MONTHLY_HOUR':
-        violations['MONTHLY_HOUR'] = await checkMonthlyHour(mensualTimetable, [parameters], complianceCheck);
-        break;
-      case 'DAILY_BREAK':
-        violations['DAILY_BREAK'] = await checkDailyBreak(mensualTimetable, [parameters], complianceCheck);
-        break;
-      case 'REST_PERIOD':
-        violations['REST_PERIOD'] = await checkRestPeriod(mensualTimetable, [parameters], complianceCheck);
-        break;
-      case 'WORK_BLOCK':
-        violations['WORK_BLOCK'] = await checkWorkBlock(mensualTimetable, [parameters], complianceCheck);
-        break;
-      case 'DAYS_OFF':
-        violations['DAYS_OFF'] = await checkDaysOff(mensualTimetable, [parameters], complianceCheck);
-        break;
-      default:
-        console.error(`Unknown compliance check function code: ${ucc.complianceCheck.function_code}`);
-    }
+   switch (complianceCheck.function_code) {
+    case 'DAILY_HOUR':
+      updateViolations(await checkDailyHour(mensualTimetable, [parameters], complianceCheck));
+      break;
+    case 'HEBDO_HOUR':
+      updateViolations(await checkWeeklyHour(mensualTimetable, [parameters], complianceCheck));
+      break;
+    case 'MONTHLY_HOUR':
+      updateViolations(await checkMonthlyHour(mensualTimetable, [parameters], complianceCheck));
+      break;
+    case 'DAILY_BREAK':
+      updateViolations(await checkDailyBreak(mensualTimetable, [parameters], complianceCheck));
+      break;
+    case 'REST_PERIOD':
+      updateViolations(await checkRestPeriod(mensualTimetable, [parameters], complianceCheck));
+      break;
+    case 'WORK_BLOCK':
+      updateViolations(await checkWorkBlock(mensualTimetable, [parameters], complianceCheck));
+      break;
+    case 'DAYS_OFF':
+      updateViolations(await checkDaysOff(mensualTimetable, [parameters], complianceCheck));
+      break;
+    default:
+      console.error(`Unknown compliance check function code: ${complianceCheck.function_code}`);
+  }
   }
   return violations;
 };
@@ -156,19 +171,33 @@ const getStartOfWeek = (date) => {
   return startOfWeek; 
 };
 
+const getEndOfWeek = (date) => {
+  const currentDate = new Date(date);
+  const day = currentDate.getDay();
+  const diff = currentDate.getDate() + (day === 0 ? 0 : 7 - day); 
+  const endOfWeek = new Date(currentDate.setDate(diff));
+  endOfWeek.setHours(23, 59, 59, 999); 
+  return endOfWeek;
+};
+
+
 const checkWeeklyHour = async (mensualTimetable, parameters, complianceCheck) => {
   const maxWeeklyHours = parameters[0].value;
-  const weeklyHours = []; // Object to store weekly hour totals
+  const weeklyHours = []; 
 
   const firstDayOfMonth = new Date(`${mensualTimetable.year}-${mensualTimetable.month}-01`);
-  const startOfFirstWeek = new Date(getStartOfWeek(firstDayOfMonth)); // Get the start of the first week
+  const startOfFirstWeek = new Date(getStartOfWeek(firstDayOfMonth)); 
 
-  // If the start of the first week is in the previous month, fetch additional data
+  const lastDayOfMonth = new Date(mensualTimetable.year, mensualTimetable.month, 0);
+  const endOfLastWeek = new Date(getEndOfWeek(lastDayOfMonth)); 
+  
   let previousMonthTimetables = [];
+  let nextMonthTimetables = [];
+  let allTimetables = [];
   if (startOfFirstWeek.getMonth() !== firstDayOfMonth.getMonth()) {
     const lastDayOfPreviousMonth = new Date(firstDayOfMonth);
-    lastDayOfPreviousMonth.setDate(0); // Last day of the previous month
-
+    lastDayOfPreviousMonth.setDate(0); 
+   
     previousMonthTimetables = await DailyTimetableSheet.findAll({
       where: {
         day: {
@@ -187,7 +216,35 @@ const checkWeeklyHour = async (mensualTimetable, parameters, complianceCheck) =>
     });
   }
 
-  const allTimetables = [...previousMonthTimetables, ...mensualTimetable.dailyTimetables];
+  allTimetables = [...previousMonthTimetables, ...mensualTimetable.dailyTimetables];
+
+  if(endOfLastWeek.getMonth() !== lastDayOfMonth.getMonth()) {
+    const firstDayOfNextMonth = new Date(lastDayOfMonth);
+    
+    firstDayOfNextMonth.setDate(1);
+    firstDayOfNextMonth.setMonth(firstDayOfNextMonth.getMonth() + 1);
+    
+    nextMonthTimetables = await DailyTimetableSheet.findAll({
+      where: {
+        day: {
+          [Op.between]: [
+            firstDayOfNextMonth,
+            endOfLastWeek,
+          ],
+        },
+      },
+      include: [
+        {
+          model: TimeSlot,
+          as: 'timeSlots',
+        },
+      ],
+    });
+  }
+
+  allTimetables = [...allTimetables, ...nextMonthTimetables];
+  console.log('All timetables:', allTimetables.length, nextMonthTimetables.length, previousMonthTimetables.length, mensualTimetable.dailyTimetables.length);
+
   const dailyTimetablesTravaille = allTimetables.filter(
     (daily) => daily.status === 'Travaillé' || daily.status === 'Demi-journée'
   );

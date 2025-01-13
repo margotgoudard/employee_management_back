@@ -121,7 +121,8 @@ const dailyTimetableController = {
         status,
         comment,
         on_call_duty,
-        is_completed,
+        is_completed: true,
+        updated_at: sequelize.fn('NOW'),
       });
 
       await createAudit({

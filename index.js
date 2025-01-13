@@ -67,8 +67,6 @@ app.use('/api/compliance-checks', complianceCheckRoutes);
 app.use('/api/subordinations', subordinationRoutes)
 app.use('/api/notifications', notificationRoutes)
 
-const complianceCheckController = require('./controllers/complianceCheckController');
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Serveur lancé sur le port ${PORT}`);
