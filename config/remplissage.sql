@@ -71,9 +71,9 @@ VALUES
 (2, 'Alice', 'Smith', 'Manager', 'alice.smith@example.com', '0987654321', '$2a$10$f4Y1utYWjhawPXG8rj9cGuphSYcOQsMHCw9Wn4myKbsi4VcgkE/mu', '2', 'Manager Street', 'Manager City', '54321', 'Manager Region', 'Manager Country', 1, TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Test Subordination
-INSERT INTO public.subordination (id_subordination, id_manager, id_user, "createdAt", "updatedAt")
+INSERT INTO public.subordination ( id_manager, id_user, "createdAt", "updatedAt")
 VALUES
-(1, 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+( 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 INSERT INTO user_compliance_check (id_user_compliance_check, id_compliance_check, id_user, parameters, "createdAt", "updatedAt")

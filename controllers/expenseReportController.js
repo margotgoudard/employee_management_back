@@ -4,20 +4,21 @@ const FeeCategory = require('../models/FeeCategory');
 const { createAudit } = require('./auditController');
 
 const expenseReportController = {
-
   createExpenseReport: async (req, res) => {
-
     try {
-      const { id_daily_timetable, id_fee_category, document_name, amount, client, motive } = req.body;
+      const { id_daily_timetable, id_fee_category, amount, client, motive } = req.body;
       const userId = req.auth.userId;
-
       if (!id_daily_timetable || !id_fee_category || !amount) {
         return res.status(400).json({ 
           message: 'Missing required fields: id_daily_timetable, id_fee_category, or amount' 
         });
       }
-      const document = req.file ? req.file.buffer.toString('base64') : null;
 
+      // Traitement du fichier s'il est présent
+      const document = req.file ? req.file.buffer.toString('base64') : null;
+      const document_name = req.file ? req.file.originalname : null;
+
+      // Création du rapport de dépense
       const expenseReport = await ExpenseReport.create({
         id_daily_timetable,
         id_fee_category,
@@ -27,6 +28,8 @@ const expenseReportController = {
         client,
         motive,
       });
+
+      // Création de l'audit
       await createAudit({
         table_name: 'expense_report',
         action: 'CREATE',
@@ -37,7 +40,7 @@ const expenseReportController = {
 
       const response = {
         ...expenseReport.dataValues,
-        document: document, 
+        document: document,
       };
       return res.status(201).json(response);
     } catch (error) {
@@ -47,7 +50,6 @@ const expenseReportController = {
       });
     }
   },
-
 
   getExpenseReportsByDailyTimetable: async (req, res) => {
     try {
@@ -108,30 +110,34 @@ const expenseReportController = {
   updateExpenseReport: async (req, res) => {
     try {
       const { id } = req.params;
-      const { id_daily_timetable, amount, document_name, client, motive } = req.body;
+      const { id_daily_timetable, amount, client, motive } = req.body;
       const userId = req.auth.userId;
-  
+
       const expenseReport = await ExpenseReport.findByPk(id);
-  
+
       if (!expenseReport) {
         return res.status(404).json({ message: 'ExpenseReport not found' });
       }
-  
+
       const oldValues = { ...expenseReport.dataValues };
-  
+
+      // Mise à jour du document s'il est fourni
       const updatedDocument = req.file
         ? req.file.buffer.toString('base64') 
         : expenseReport.document;
-  
+      const updatedDocumentName = req.file
+        ? req.file.originalname
+        : expenseReport.document_name;
+
       await expenseReport.update({
         id_daily_timetable,
         amount,
-        document_name,
+        document_name: updatedDocumentName,
         document: updatedDocument,
         client,
         motive,
       });
-  
+
       await createAudit({
         table_name: 'expense_report',
         action: 'UPDATE',
@@ -139,16 +145,12 @@ const expenseReportController = {
         new_values: expenseReport.dataValues,
         userId,
       });
-  
-      const documentInBase64 = expenseReport.document
-        ? Buffer.from(expenseReport.document, 'base64').toString('base64')
-        : null;
-  
+
       const response = {
         ...expenseReport.dataValues,
-        document: documentInBase64,
+        document: updatedDocument,
       };
-  
+
       return res.status(200).json(response);
     } catch (error) {
       return res.status(500).json({
@@ -157,8 +159,6 @@ const expenseReportController = {
       });
     }
   },
-  
-  
 
   deleteExpenseReport: async (req, res) => {
     try {
