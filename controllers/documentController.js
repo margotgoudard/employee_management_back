@@ -28,19 +28,11 @@ const documentController = {
                 return res.status(400).json({ message: 'Document file is required' });
             }
     
-            // Extraire le nom complet du fichier avec l'extension
             const name = req.file.originalname;
-    
-            // Récupérer le contenu du fichier
             const document = req.file.buffer;
-    
-            // Créer le document dans la base de données
             const newDocument = await Document.create({ name, id_document_category, id_user, document });
-    
-            // Encoder le fichier en base64 pour le retourner dans la réponse
             const base64Document = document.toString('base64');
     
-            // Créer un audit de la création
             await createAudit({
                 table_name: 'document',
                 action: 'CREATE',
@@ -61,6 +53,7 @@ const documentController = {
                     id_document_category: newDocument.id_document_category,
                     id_user: newDocument.id_user,
                     document: base64Document,
+                    updatedAt: newDocument.updatedAt
                 },
             });
         } catch (error) {
