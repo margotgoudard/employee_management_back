@@ -6,8 +6,49 @@ const MensualTimetableSheet = require('../models/MensualTimetableSheet');
 const DailyTimetableSheet = require('../models/DailyTimetableSheet');
 const TimeSlot = require('../models/TimeSlot');
 const { Op } = require('sequelize'); 
+const e = require('cors');
 
 const complianceCheckController = {
+  getWeeklyHours : async (req, res) => {
+    try {
+      const { id } = req.params;
+      const mensualTimetable = await MensualTimetableSheet.findOne({
+        where: { id_timetable : id },
+        include: [
+          {
+            model: DailyTimetableSheet,
+            as: 'dailyTimetables',
+            include: [
+              {
+                model: TimeSlot,
+                as: 'timeSlots',
+              },
+            ],
+          },
+        ],
+      });
+    
+      if (!mensualTimetable) {
+        return res.status(404).json({ message: 'Mensual timetable not found.' });
+      }else{
+        const weeklyHours = await calculateWeeklyHours(mensualTimetable);
+        const updatedWeeklyHours = {};
+
+        Object.keys(weeklyHours).forEach((key) => {
+          const mondayDate = new Date(key);
+          const sundayDate = new Date(mondayDate);
+          sundayDate.setDate(mondayDate.getDate() + 6);
+          updatedWeeklyHours[sundayDate] = weeklyHours[key];
+        });
+        console.log('***************************************************************Weekly hours:', weeklyHours, updatedWeeklyHours);
+        return res.status(200).json(updatedWeeklyHours);
+      }
+    } catch (error) {
+      console.error('Error fetching weekly hours:', error);
+      return res.status(500).json({ message: 'Error fetching weekly hours', error });
+    }
+  },
+
   getComplianceChecks: async (req, res) => {
     try {
       const complianceChecks = await ComplianceCheck.findAll(
@@ -32,7 +73,6 @@ const complianceCheckController = {
       const { id } = req.params;
       console.log('Checking compliance for timetable:', id);
       const violations = await checkEachRule(id);
-      // console.log('**************Violations:', violations);
       return res.status(200).json(violations);
     } catch (error) {
       console.error('Error during compliance check:', error);
@@ -43,7 +83,6 @@ const complianceCheckController = {
 
 
  const checkEachRule = async (id_timetable) => {
-
   const mensualTimetable = await MensualTimetableSheet.findOne({
     where: { id_timetable },
     include: [
@@ -165,9 +204,9 @@ const checkDailyHour = async (mensualTimetable, parameters, complianceCheck) => 
 const getStartOfWeek = (date) => {
   const currentDate = new Date(date);
   const day = currentDate.getDay();
-  const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1); // Ajuster pour que lundi soit le début de la semaine
+  const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1); 
   const startOfWeek = new Date(currentDate.setDate(diff));
-  startOfWeek.setHours(0, 0, 0, 0); // S'assurer que l'heure est à minuit
+  startOfWeek.setHours(0, 0, 0, 0); 
   return startOfWeek; 
 };
 
@@ -178,96 +217,68 @@ const getEndOfWeek = (date) => {
   const endOfWeek = new Date(currentDate.setDate(diff));
   endOfWeek.setHours(23, 59, 59, 999); 
   return endOfWeek;
-};
+};  
 
-
-const checkWeeklyHour = async (mensualTimetable, parameters, complianceCheck) => {
-  const maxWeeklyHours = parameters[0].value;
-  const weeklyHours = []; 
+const calculateWeeklyHours = async (mensualTimetable) => {
+  const weeklyHours = {}; 
 
   const firstDayOfMonth = new Date(`${mensualTimetable.year}-${mensualTimetable.month}-01`);
   const startOfFirstWeek = new Date(getStartOfWeek(firstDayOfMonth)); 
 
   const lastDayOfMonth = new Date(mensualTimetable.year, mensualTimetable.month, 0);
   const endOfLastWeek = new Date(getEndOfWeek(lastDayOfMonth)); 
-  
-  let previousMonthTimetables = [];
-  let nextMonthTimetables = [];
-  let allTimetables = [];
-  if (startOfFirstWeek.getMonth() !== firstDayOfMonth.getMonth()) {
-    const lastDayOfPreviousMonth = new Date(firstDayOfMonth);
-    lastDayOfPreviousMonth.setDate(0); 
-   
-    previousMonthTimetables = await DailyTimetableSheet.findAll({
-      where: {
-        day: {
-          [Op.between]: [
-            startOfFirstWeek,
-            new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth(), 0),
-          ],
+
+  let allTimetables = {};
+  allTimetables =  await DailyTimetableSheet.findAll({
+    where: {
+      day: {
+        [Op.between]: [
+          startOfFirstWeek,
+          endOfLastWeek,
+        ],
+      }
+    },
+    include: [
+      {
+        model: MensualTimetableSheet,
+        as: 'mensualTimetable', 
+        where: {
+          id_user: mensualTimetable.id_user, 
         },
       },
-      include: [
-        {
-          model: TimeSlot,
-          as: 'timeSlots',
-        },
-      ],
-    });
-  }
-
-  allTimetables = [...previousMonthTimetables, ...mensualTimetable.dailyTimetables];
-
-  if(endOfLastWeek.getMonth() !== lastDayOfMonth.getMonth()) {
-    const firstDayOfNextMonth = new Date(lastDayOfMonth);
-    
-    firstDayOfNextMonth.setDate(1);
-    firstDayOfNextMonth.setMonth(firstDayOfNextMonth.getMonth() + 1);
-    
-    nextMonthTimetables = await DailyTimetableSheet.findAll({
-      where: {
-        day: {
-          [Op.between]: [
-            firstDayOfNextMonth,
-            endOfLastWeek,
-          ],
-        },
+      {
+        model: TimeSlot,
+        as: 'timeSlots',
       },
-      include: [
-        {
-          model: TimeSlot,
-          as: 'timeSlots',
-        },
-      ],
-    });
-  }
-
-  allTimetables = [...allTimetables, ...nextMonthTimetables];
-  console.log('All timetables:', allTimetables.length, nextMonthTimetables.length, previousMonthTimetables.length, mensualTimetable.dailyTimetables.length);
-
+    ],
+  });
+ 
   const dailyTimetablesTravaille = allTimetables.filter(
     (daily) => daily.status === 'Travaillé' || daily.status === 'Demi-journée'
   );
 
-  // Iterate over all days in the timetables
   dailyTimetablesTravaille.forEach((daily) => {
     const currentDate = new Date(daily.day);
     const weekKey = getStartOfWeek(currentDate);
 
-    // Calculate the total hours for the day
     const dailyTotal = daily.timeSlots.reduce((total, slot) => {
       if (slot.status !== 'Travaillé') return total;
       const duration = (new Date(`1970-01-01T${slot.end}`) - new Date(`1970-01-01T${slot.start}`)) / 3600000;
       return total + duration;
     }, 0);
 
-    // Accumulate hours for the week
     weeklyHours[weekKey] = (weeklyHours[weekKey] || 0) + dailyTotal;
   });
 
+  return weeklyHours;
+};
+
+
+const checkWeeklyHour = async (mensualTimetable, parameters, complianceCheck) => {
+  const maxWeeklyHours = parameters[0].value;
+  const weeklyHours = await calculateWeeklyHours(mensualTimetable); 
   console.log('Weekly hours:', weeklyHours);
 
-  // Structure des violations avec la date de début de semaine comme clé et un message descriptif
   const violations = Object.entries(weeklyHours).reduce((acc, [week, hours]) => {
     if (hours > maxWeeklyHours) {
       acc[week] = `Le total d'heures travaillées pour la semaine débutant le ${week.split('T')[0]} est de ${hours} heures, ce qui dépasse la limite maximale autorisée (${maxWeeklyHours} heures).`;

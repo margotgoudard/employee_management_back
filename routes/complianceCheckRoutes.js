@@ -4,6 +4,7 @@ const complianceCheckController = require('../controllers/complianceCheckControl
 
 router.get('', complianceCheckController.getComplianceChecks);
 router.get('/mensual/:id', complianceCheckController.complianceCheckForTimeTable);
+router.get('/weekly-hours/:id', complianceCheckController.getWeeklyHours);
 
 
 module.exports = router;
