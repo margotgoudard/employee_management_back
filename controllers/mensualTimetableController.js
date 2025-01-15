@@ -270,7 +270,7 @@ const mensualTimetableController = {
       }, 0);
     }, 0);
 
-    return res.status(200).json({ totalHours });
+    return res.status(200).json(totalHours);
   },
 
   getLastMensualTimetable: async (req, res) => {
@@ -281,14 +281,13 @@ const mensualTimetableController = {
         order: [['year', 'DESC'], ['month', 'DESC']],
       });
     
-      return res.status(400).json(lastMensualTimetable);
+      return res.status(200).json(lastMensualTimetable);
     }
     catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Error fetching Last Mensual Timetable', error });
     }
   }
-
 };
 
 module.exports = mensualTimetableController;
