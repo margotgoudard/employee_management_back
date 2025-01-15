@@ -274,13 +274,19 @@ const mensualTimetableController = {
   },
 
   getLastMensualTimetable: async (req, res) => {
-    const { id } = req.params;
-    const lastMensualTimetable = await MensualTimetableSheet.findOne({
-      where: { id_user: id },
-      order: [['year', 'DESC'], ['month', 'DESC']],
-    });
-  
-    return res.status(400).json(lastMensualTimetable);;
+    try {
+      const { id } = req.params;
+      const lastMensualTimetable = await MensualTimetableSheet.findOne({
+        where: { id_user: id },
+        order: [['year', 'DESC'], ['month', 'DESC']],
+      });
+    
+      return res.status(400).json(lastMensualTimetable);
+    }
+    catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Error fetching Last Mensual Timetable', error });
+    }
   }
 
 };
