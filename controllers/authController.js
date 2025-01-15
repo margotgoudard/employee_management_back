@@ -40,16 +40,7 @@ const login = async (req, res) => {
     return res.status(200).json({
       message: "Login successful.",
       token: token,
-      user: {
-        id_user: user.id_user,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role,
-        mail: user.mail,
-        last_connected: user.last_connected,
-        phone: user.phone,
-        id_department: user.id_department
-      },
+      user: user
     });
   } catch (err) {
     res.status(500).json({ error: "An error occurred during login."+err });
