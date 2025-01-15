@@ -271,6 +271,16 @@ const mensualTimetableController = {
     }, 0);
 
     return res.status(200).json({ totalHours });
+  },
+
+  getLastMensualTimetable: async (req, res) => {
+    const { id } = req.params;
+    const lastMensualTimetable = await MensualTimetableSheet.findOne({
+      where: { id_user: id },
+      order: [['year', 'DESC'], ['month', 'DESC']],
+    });
+  
+    return res.status(400).json(lastMensualTimetable);;
   }
 
 };
