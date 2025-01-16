@@ -1,5 +1,4 @@
-const Permission = require('../models/Permission');
-const User = require('../models/User');
+const { User, Permission } = require('../models/Relations');
 const { createAudit } = require('./auditController');
 
 const permissionController = {
@@ -121,24 +120,35 @@ const permissionController = {
   // Récupérer les permissions d'un utilisateur par ID
   getPermissionsByUserId: async (req, res) => {
     try {
+      console.log('Paramètres reçus:', req.params);
       const { id_user } = req.params;
-
+  
+      if (!id_user) {
+        console.log("Erreur: L'ID utilisateur est manquant");
+        return res.status(400).json({ error: "L'ID utilisateur est requis" });
+      }
+  
+      // Trouver l'utilisateur avec ses permissions
       const user = await User.findByPk(id_user, {
         include: {
           model: Permission,
-          through: { attributes: [] },
+          through: { attributes: [] }, 
         },
       });
-
+  
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        console.log("Erreur: Utilisateur introuvable");
+        return res.status(404).json({ error: "Utilisateur introuvable" });
       }
-
-      return res.status(200).json(user.Permissions);
+  
+      console.log('Permissions récupérées:', user.Permissions);
+      return res.status(200).json(user.Permissions); // Renvoie les permissions associées à l'utilisateur
     } catch (error) {
-      return res.status(500).json({ message: 'Error fetching permissions for user', error });
+      console.error('Erreur interne:', error);
+      return res.status(500).json({ error: 'Erreur interne du serveur' });
     }
   },
+  
 
   addPermissionToUser: async (req, res) => {
     try {
