@@ -5,7 +5,6 @@ const Subordination = require('../models/Subordination');
 
 const userController = {
 
-  // Création d'un utilisateur
   createUser: async (req, res) => {
     try {
       const {
@@ -106,7 +105,6 @@ const userController = {
     }
   },
 
-  // Récupérer tous les utilisateurs
   getAllUsers: async (req, res) => {
     try {
       const users = await User.findAll();
@@ -117,7 +115,6 @@ const userController = {
     }
   },
 
-  // Récupérer un utilisateur par ID
   getUserById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -134,7 +131,6 @@ const userController = {
     }
   },
 
-  // Mettre à jour un utilisateur
   updateUser: async (req, res) => {
     try {
       const { id } = req.params;
@@ -184,7 +180,6 @@ const userController = {
     }
   },
 
-  // Désactiver un utilisateur (au lieu de le supprimer)
   deleteUser: async (req, res) => {
     try {
       const { id } = req.params;
@@ -215,7 +210,6 @@ const userController = {
     }
   },
 
-  // Modifier le mot de passe d'un utilisateur par ID avec confirmation du nouveau mot de passe et gestion de last_connected
   changePassword: async (req, res) => {
     try {
       const { id } = req.params;

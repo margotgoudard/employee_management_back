@@ -1,12 +1,13 @@
-const ComplianceCheck = require('../models/ComplianceCheck');
-const ComplianceCheckParameter = require('../models/ComplianceCheckParameter');
-const UserComplianceCheck = require('../models/UserComplianceCheck');
+
+
+const { ComplianceCheck, ComplianceCheckParameter, UserComplianceCheck } = require('../models/Relations');
 const mensualTimetableController = require('./mensualTimetableController');
 const MensualTimetableSheet = require('../models/MensualTimetableSheet');
 const DailyTimetableSheet = require('../models/DailyTimetableSheet');
 const TimeSlot = require('../models/TimeSlot');
 const { Op } = require('sequelize'); 
 const e = require('cors');
+const { createAudit } = require('./auditController');
 
 const complianceCheckController = {
   getWeeklyHours : async (req, res) => {
@@ -40,7 +41,6 @@ const complianceCheckController = {
           sundayDate.setDate(mondayDate.getDate() + 6);
           updatedWeeklyHours[sundayDate] = weeklyHours[key];
         });
-        console.log('***************************************************************Weekly hours:', weeklyHours, updatedWeeklyHours);
         return res.status(200).json(updatedWeeklyHours);
       }
     } catch (error) {
@@ -71,15 +71,244 @@ const complianceCheckController = {
   complianceCheckForTimeTable: async (req, res) => {
     try {
       const { id } = req.params;
-      console.log('Checking compliance for timetable:', id);
       const violations = await checkEachRule(id);
+
       return res.status(200).json(violations);
     } catch (error) {
       console.error('Error during compliance check:', error);
       return res.status(500).json({ message: 'Error during compliance check', error });
     }
+  },
+
+  getAssignedComplianceChecks: async (req, res) => {
+    const { id_user } = req.params;
+
+    try {   
+      const assignedChecks = await UserComplianceCheck.findAll({
+        where: { id_user },
+        include: [
+          {
+            model: ComplianceCheck,
+            as: 'complianceCheck',
+            include: [
+              {
+                model: ComplianceCheckParameter,
+                as: 'parameters',
+              },
+            ],
+          },
+        ],
+      });
+
+      const response = assignedChecks.map((uc) => {
+        const complianceCheck = uc.complianceCheck;
+
+        const complianceCheckParameters = complianceCheck.parameters.map((defaultParam) => ({
+          id_parameter: defaultParam.id_parameter,
+          id_compliance_check: complianceCheck.id_compliance_check,
+          name: defaultParam.name,
+          type: defaultParam.type,
+          createdAt: defaultParam.createdAt,
+          updatedAt: defaultParam.updatedAt,
+          value: defaultParam.default_value 
+        }));
+
+        let userComplianceCheckParams = uc.parameters;
+
+        if (typeof userComplianceCheckParams === 'string') {
+          try {
+            userComplianceCheckParams = JSON.parse(userComplianceCheckParams);
+          } catch (e) {
+            console.error('Erreur lors de la conversion de la chaîne JSON en objet:', e);
+            userComplianceCheckParams = [];
+          }
+        }
+
+        if (!Array.isArray(userComplianceCheckParams)) {
+          userComplianceCheckParams = [];
+        }
+        const mergedParameters = complianceCheckParameters.map((defaultParam) => {
+          
+          const userParam = userComplianceCheckParams.find(
+            (param) => param.id_parameter === defaultParam.id_parameter
+          );
+          
+          if (userParam) {
+            return {
+              ...defaultParam, 
+              value: userParam.value, 
+            };
+          } else {
+            return defaultParam;
+          }
+        });
+
+        return {
+          id_compliance_check: complianceCheck.id_compliance_check,
+          name: complianceCheck.name,
+          description: complianceCheck.description,
+          function_code: complianceCheck.function_code,
+          createdAt: complianceCheck.createdAt,
+          updatedAt: complianceCheck.updatedAt,
+          parameters: mergedParameters,
+        };
+      });
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des compliance checks assignés:', error);
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  },
+
+
+  getAllComplianceChecks : async (req, res) => {
+    try {
+      const complianceChecks = await ComplianceCheck.findAll({
+        include: [{ model: ComplianceCheckParameter, as: 'parameters' }],
+      });
+      res.status(200).json(complianceChecks);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des compliance checks:', error);
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  },
+
+  addComplianceCheckToUser: async (req, res) => {
+    const { id_user, id_compliance_check } = req.params;
+    const userId = req.auth.userId;
+
+    try {
+      const newCheck = await UserComplianceCheck.create({
+        id_user,
+        id_compliance_check,
+      });
+
+      await createAudit({
+        table_name: 'user_compliance_check',
+        action: 'CREATE',
+        old_values: null,
+        new_values: newCheck.dataValues,
+        userId,
+      });
+
+      res.status(201).json(newCheck);
+    } catch (error) {
+      console.error('Erreur lors de l’ajout du compliance check:', error);
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  },
+
+  removeComplianceCheckFromUser: async (req, res) => {
+    const { id_user, id_compliance_check } = req.params;
+    const userId = req.auth.userId;
+
+    try {
+      const complianceCheck = await UserComplianceCheck.findOne({
+        where: { id_user, id_compliance_check },
+      });
+
+      if (!complianceCheck) {
+        return res.status(404).json({ message: 'Compliance check not found for this user.' });
+      }
+
+      const oldValues = { ...complianceCheck.dataValues };
+
+      await complianceCheck.destroy();
+
+      await createAudit({
+        table_name: 'user_compliance_check',
+        action: 'DELETE',
+        old_values: oldValues,
+        new_values: null,
+        userId,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error('Erreur lors de la suppression du compliance check:', error);
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  },
+
+  updateComplianceCheckParameters: async (req, res) => {
+    const { id_user, id_compliance_check } = req.params;
+    const { parameters } = req.body;
+    const userId = req.auth.userId;
+
+    try {
+      const userComplianceCheck = await UserComplianceCheck.findOne({
+        where: { id_user, id_compliance_check },
+      });
+
+      if (!userComplianceCheck) {
+        return res.status(404).json({
+          message: `L'utilisateur avec l'ID ${id_user} n'a pas ce compliance check avec l'ID ${id_compliance_check}.`,
+        });
+      }
+
+      const oldValues = { parameters: userComplianceCheck.parameters };
+
+      userComplianceCheck.parameters = parameters;
+
+      await userComplianceCheck.save();
+
+      await createAudit({
+        table_name: 'user_compliance_check',
+        action: 'UPDATE',
+        old_values: oldValues,
+        new_values: { parameters },
+        userId,
+      });
+
+      return res.status(200).json({
+        message: 'Les paramètres ont été mis à jour avec succès.',
+        data: userComplianceCheck,
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des paramètres :', error);
+      return res.status(500).json({
+        message: 'Erreur interne du serveur.',
+      });
+    }
+  },
+  
+  
+  getComplianceCheckParameters : async (req, res) => {
+    const { id_compliance_check } = req.params;
+  
+    try {
+      const complianceCheck = await ComplianceCheck.findByPk(id_compliance_check, {
+        include: {
+          model: ComplianceCheckParameter,
+          as: 'parameters', 
+          attributes: ['id_parameter', 'name', 'type', 'default_value'],
+        },
+      });
+  
+      if (!complianceCheck) {
+        return res.status(404).json({
+          message: `Le Compliance Check avec l'ID ${id_compliance_check} n'existe pas.`,
+        });
+      }
+      return res.status(200).json({
+        complianceCheck: {
+          id: complianceCheck.id_compliance_check,
+          name: complianceCheck.name,
+          description: complianceCheck.description,
+        },
+        parameters: complianceCheck.parameters,
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération des paramètres :', error);
+      return res.status(500).json({
+        message: 'Erreur interne du serveur',
+      });
+    }
   }
+  
  };
+
 
 
  const checkEachRule = async (id_timetable) => {
@@ -104,7 +333,6 @@ const complianceCheckController = {
     return;
   }
   const id_user = mensualTimetable.id_user;
-  console.log('**Checking compliance rules for user:', id_user, 'timetable:', id_timetable);
   const userComplianceChecks = await UserComplianceCheck.findAll({
     where: { id_user },
     include: [
@@ -141,7 +369,6 @@ const complianceCheckController = {
   for (const ucc of userComplianceChecks) {
    const parameters = ucc.parameters;
    const complianceCheck = ucc.complianceCheck;
-   console.log('Checking compliance rule:', ucc.complianceCheck.function_code, 'with parameters:', parameters);
    switch (complianceCheck.function_code) {
     case 'DAILY_HOUR':
       updateViolations(await checkDailyHour(mensualTimetable, [parameters], complianceCheck));
@@ -172,7 +399,6 @@ const complianceCheckController = {
 };
 
 const checkDailyHour = async (mensualTimetable, parameters, complianceCheck) => {
- console.log('Checking daily params:', { parameters });
 
  const maxDailyHours = parameters[0].value;
 
@@ -277,7 +503,6 @@ const calculateWeeklyHours = async (mensualTimetable) => {
 const checkWeeklyHour = async (mensualTimetable, parameters, complianceCheck) => {
   const maxWeeklyHours = parameters[0].value;
   const weeklyHours = await calculateWeeklyHours(mensualTimetable); 
-  console.log('Weekly hours:', weeklyHours);
 
   const violations = Object.entries(weeklyHours).reduce((acc, [week, hours]) => {
     if (hours > maxWeeklyHours) {
@@ -503,7 +728,6 @@ const checkDaysOff = async (mensualTimetable, parameters, complianceCheck) => {
 
 
 // checkEachRule(1);
-
 
  module.exports = complianceCheckController;
 

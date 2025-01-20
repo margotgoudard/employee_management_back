@@ -3,7 +3,6 @@ const User = require('../models/User');
 const { getManagerForUser } = require('../controllers/subordinationController')
 const createAudit = require('./auditController').createAudit;
 
-// Fonction utilitaire pour créer une notification
 const createNotification = async ({ content, type, id_user, id_timetable, userId }) => {
     try {
       const user = await User.findByPk(id_user);

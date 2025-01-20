@@ -14,11 +14,9 @@ const expenseReportController = {
         });
       }
 
-      // Traitement du fichier s'il est présent
       const document = req.file ? req.file.buffer.toString('base64') : null;
       const document_name = req.file ? req.file.originalname : null;
 
-      // Création du rapport de dépense
       const expenseReport = await ExpenseReport.create({
         id_daily_timetable,
         id_fee_category,
@@ -29,7 +27,6 @@ const expenseReportController = {
         motive,
       });
 
-      // Création de l'audit
       await createAudit({
         table_name: 'expense_report',
         action: 'CREATE',
@@ -121,7 +118,6 @@ const expenseReportController = {
 
       const oldValues = { ...expenseReport.dataValues };
 
-      // Mise à jour du document s'il est fourni
       const updatedDocument = req.file
         ? req.file.buffer.toString('base64') 
         : expenseReport.document;
