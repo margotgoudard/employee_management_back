@@ -382,6 +382,28 @@ const userController = {
     }
   },
 
+  checkManager: async (req, res) => {
+    try {
+      const { id_manager, id_user } = req.params;
+      
+      const subordination = await Subordination.findOne({
+        where: {
+          id_manager,
+          id_user,
+        },
+      });
+
+      if (!subordination) {
+        return res.status(200).json({ isManager: false });
+      }
+
+      return res.status(200).json({ isManager: true });
+    } catch (error) {
+      console.error('Error checking manager:', error);
+      return res.status(500).json({ message: 'Error checking manager', error });
+    }
+  },
+
 };
 
 module.exports = userController;

@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const { createTokens } = require("../middleware/auth.js");
 const User = require("../models/User.js");
 const { createAudit } = require('./auditController.js');
+const Permission = require("../models/Permission.js");
 
 const login = async (req, res) => {
   try {
@@ -11,7 +12,14 @@ const login = async (req, res) => {
       return res.status(400).json({ error: "Email and password are required." });
     }
 
-    const user = await User.findOne({ where: { mail } });
+    const user = await User.findOne({
+      where: { mail },
+      include: [
+        {
+          model: Permission, 
+        },
+      ],
+    });
 
     if (!user) {
       return res.status(404).json({ error: "User not found." });
@@ -37,10 +45,13 @@ const login = async (req, res) => {
       userId: user.id_user, 
     });
 
+    const permissions = user.Permissions.map(permission => permission.name); 
+
     return res.status(200).json({
       message: "Login successful.",
       token: token,
-      user: user
+      user: user,
+      permissions: permissions
     });
   } catch (err) {
     res.status(500).json({ error: "An error occurred during login."+err });
