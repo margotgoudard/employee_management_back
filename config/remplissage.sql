@@ -23,36 +23,36 @@ VALUES
     (6, 'Durée Maximale d''un Bloc de Travail', 'Durée maximale d''un bloc de travail continu sans pause.', 'WORK_BLOCK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (7, 'Minimum de Jours de Repos par Semaine', 'Nombre minimum de jours de repos par semaine.', 'DAYS_OFF', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
-INSERT INTO compliance_check_parameter (id_parameter, id_compliance_check, name, type, default_value, "createdAt", "updatedAt")
+INSERT INTO compliance_check_parameter ( id_compliance_check, name, type, default_value, "createdAt", "updatedAt")
 VALUES
     -- Heures maximales quotidiennes
-    (1, 1, 'DAILY_HOUR', 'number', '14', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 1, 'DAILY_HOUR', 'number', '14', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales hebdomadaires
-    (2, 2, 'HEBDO_HOUR', 'number', '50', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 2, 'HEBDO_HOUR', 'number', '50', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales mensuelles
-    (3, 3, 'MONTHLY_HOUR', 'number', '200', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 3, 'MONTHLY_HOUR', 'number', '200', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Temps de pause quotidienne
-    (4, 4, 'DAILY_BREAK_5h30', 'number', '15', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (5, 4, 'DAILY_BREAK_7h', 'number', '30', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (6, 4, 'DAILY_BREAK_9h', 'number', '60', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (7, 4, 'DAILY_BREAK_MIN', 'number', '30', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (8, 4, 'DAILY_BREAK_FRACTIONNABLE', 'boolean', 'true', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 4, 'DAILY_BREAK_5h30', 'number', '15', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 4, 'DAILY_BREAK_7h', 'number', '30', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 4, 'DAILY_BREAK_9h', 'number', '60', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 4, 'DAILY_BREAK_MIN', 'number', '30', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 4, 'DAILY_BREAK_FRACTIONNABLE', 'boolean', 'true', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
    
     -- Temps minimal entre la fin de journée de travail et le début de la journée suivante
-    (9, 5, 'REST_PERIOD', 'number', '11', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 5, 'REST_PERIOD', 'number', '11', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Durée maximale d’un bloc de travail sans pause
-    (10, 6, 'WORK_BLOCK', 'number', '6', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 6, 'WORK_BLOCK', 'number', '6', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Minimum de jours de repos par semaine
-    (11, 7, 'DAYS_OFF', 'number', '1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+    ( 7, 'DAYS_OFF', 'number', '1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- Test Company
-INSERT INTO public.company (id_company, name, num_address, street_address, city_address, area_code_address, region_address, country_address, logo, "createdAt", "updatedAt") VALUES (1, 'Tech Innovators Inc.', '123', 'Innovation Street', 'San Francisco', '94107', 'California', 'USA', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO public.company ( name, num_address, street_address, city_address, area_code_address, region_address, country_address, logo, "createdAt", "updatedAt") VALUES ( 'Tech Innovators Inc.', '123', 'Innovation Street', 'San Francisco', '94107', 'California', 'USA', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- Test Department
@@ -76,19 +76,19 @@ VALUES
 ( 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
-INSERT INTO user_compliance_check (id_user_compliance_check, id_compliance_check, id_user, parameters, "createdAt", "updatedAt")
+INSERT INTO user_compliance_check ( id_compliance_check, id_user, parameters, "createdAt", "updatedAt")
 VALUES
     -- Heures maximales quotidiennes
-    (1, 1, 1, '{"id_parameter": 1, "value": 8}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 1, 1, '{"id_parameter": 1, "value": 8}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales hebdomadaires
-    (2, 2, 1, '{"id_parameter": 2, "value": 40}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 2, 1, '{"id_parameter": 2, "value": 40}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales mensuelles
-    (3, 3, 1, '{"id_parameter": 3, "value": 160}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 3, 1, '{"id_parameter": 3, "value": 160}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Temps de pause quotidienne (avec plusieurs paramètres)
-    (4, 4, 1, 
+    ( 4, 1, 
      '[
         {"id_parameter": 4, "value": 15},
         {"id_parameter": 5, "value": 30},
@@ -99,13 +99,13 @@ VALUES
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Temps minimal entre la fin de journée de travail et le début de la journée suivante
-    (5, 5, 1, '{"id_parameter": 9, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 5, 1, '{"id_parameter": 9, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Durée maximale d’un bloc de travail sans pause
-    (6, 6, 1, '{"id_parameter": 10, "value": 6}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ( 6, 1, '{"id_parameter": 10, "value": 6}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Minimum de jours de repos par semaine
-    (7, 7, 1, '{"id_parameter": 11, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+    ( 7, 1, '{"id_parameter": 11, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insertion des permissions
 -- Insertion des permissions avec les colonnes createdAt et updatedAt

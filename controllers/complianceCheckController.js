@@ -1,6 +1,6 @@
-const ComplianceCheck = require('../models/ComplianceCheck');
-const ComplianceCheckParameter = require('../models/ComplianceCheckParameter');
-const UserComplianceCheck = require('../models/UserComplianceCheck');
+
+
+const { ComplianceCheck, ComplianceCheckParameter, UserComplianceCheck } = require('../models/Relations');
 const mensualTimetableController = require('./mensualTimetableController');
 const MensualTimetableSheet = require('../models/MensualTimetableSheet');
 const DailyTimetableSheet = require('../models/DailyTimetableSheet');
@@ -78,8 +78,230 @@ const complianceCheckController = {
       console.error('Error during compliance check:', error);
       return res.status(500).json({ message: 'Error during compliance check', error });
     }
+  },
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
+
+// Récupérer les compliance checks assignés à un utilisateur
+getAssignedComplianceChecks: async (req, res) => {
+  const { id_user } = req.params;
+
+  try {
+    // Récupérer les compliance checks assignés à l'utilisateur, y compris les paramètres par défaut
+    const assignedChecks = await UserComplianceCheck.findAll({
+      where: { id_user },
+      include: [
+        {
+          model: ComplianceCheck,
+          as: 'complianceCheck',
+          include: [
+            {
+              model: ComplianceCheckParameter,
+              as: 'parameters',
+            },
+          ],
+        },
+      ],
+    });
+
+    // Parcourir chaque compliance check assigné et fusionner les paramètres modifiés
+    const response = assignedChecks.map((uc) => {
+      const complianceCheck = uc.complianceCheck;
+
+      // Créer une copie des paramètres par défaut du compliance check
+      const complianceCheckParameters = complianceCheck.parameters.map((defaultParam) => ({
+        id_parameter: defaultParam.id_parameter,
+        id_compliance_check: complianceCheck.id_compliance_check,
+        name: defaultParam.name,
+        type: defaultParam.type,
+        createdAt: defaultParam.createdAt,
+        updatedAt: defaultParam.updatedAt,
+        value: defaultParam.default_value // Inclure toujours le champ "value", même s'il n'est pas modifié
+      }));
+
+      // Si uc.parameters est une chaîne, on la parse. Si c'est déjà un objet/array, on l'utilise directement
+      let userComplianceCheckParams = uc.parameters;
+
+      // Si userComplianceCheckParams est une chaîne, la parser
+      if (typeof userComplianceCheckParams === 'string') {
+        try {
+          userComplianceCheckParams = JSON.parse(userComplianceCheckParams);
+        } catch (e) {
+          console.error('Erreur lors de la conversion de la chaîne JSON en objet:', e);
+          userComplianceCheckParams = [];
+        }
+      }
+
+      // Vérifier si userComplianceCheckParams est un tableau
+      if (!Array.isArray(userComplianceCheckParams)) {
+        userComplianceCheckParams = [];
+      }
+
+      // Fusionner les paramètres (en utilisant uniquement la première valeur de chaque paramètre)
+      const mergedParameters = complianceCheckParameters.map((defaultParam) => {
+        // Chercher un paramètre modifié par l'utilisateur
+        const userParam = userComplianceCheckParams.find(
+          (param) => param.id_parameter === defaultParam.id_parameter
+        );
+        // Si un paramètre est modifié, on remplace par la valeur modifiée
+        if (userParam) {
+          return {
+            ...defaultParam, // Inclure les propriétés de base du paramètre
+            value: userParam.value, // Remplacer avec la valeur modifiée par l'utilisateur
+          };
+        } else {
+          // Sinon, on conserve la valeur par défaut pour le paramètre
+          return defaultParam;
+        }
+      });
+
+      // Retourner le compliance check avec les paramètres fusionnés
+      return {
+        id_compliance_check: complianceCheck.id_compliance_check,
+        name: complianceCheck.name,
+        description: complianceCheck.description,
+        function_code: complianceCheck.function_code,
+        createdAt: complianceCheck.createdAt,
+        updatedAt: complianceCheck.updatedAt,
+        parameters: mergedParameters,
+      };
+    });
+
+    // Retourner la réponse sous forme de tableau
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des compliance checks assignés:', error);
+    res.status(500).json({ error: 'Erreur interne du serveur' });
   }
+},
+
+
+  // Récupérer tous les compliance checks
+  getAllComplianceChecks : async (req, res) => {
+    try {
+      const complianceChecks = await ComplianceCheck.findAll({
+        include: [{ model: ComplianceCheckParameter, as: 'parameters' }],
+      });
+      res.status(200).json(complianceChecks);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des compliance checks:', error);
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  },
+
+  // Ajouter un compliance check à un utilisateur
+  addComplianceCheckToUser : async (req, res) => {
+    const { id_user, id_compliance_check } = req.params;
+    try {
+      const newCheck = await UserComplianceCheck.create({
+        id_user,
+        id_compliance_check,
+      });
+
+      res.status(201).json(newCheck);
+    } catch (error) {
+      console.error('Erreur lors de l’ajout du compliance check:', error);
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  },
+
+  // Supprimer un compliance check d'un utilisateur
+  removeComplianceCheckFromUser : async (req, res) => {
+    const { id_user, id_compliance_check } = req.params;
+
+    try {
+      await UserComplianceCheck.destroy({
+        where: { id_user, id_compliance_check },
+      });
+
+      res.status(204).send(); // Pas de contenu
+    } catch (error) {
+      console.error('Erreur lors de la suppression du compliance check:', error);
+      res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+  },
+
+  updateComplianceCheckParameters : async (req, res) => {
+    const { id_user, id_compliance_check } = req.params;
+    const { parameters } = req.body; // Récupérer les nouveaux paramètres
+  
+    try {
+      // Vérifier si l'utilisateur possède ce compliance check
+      const userComplianceCheck = await UserComplianceCheck.findOne({
+        where: { id_user, id_compliance_check },
+      });
+      console.log(parameters)
+      if (!userComplianceCheck) {
+        return res.status(404).json({
+          message: `L'utilisateur avec l'ID ${id_user} n'a pas ce compliance check avec l'ID ${id_compliance_check}.`,
+        });
+      }
+      userComplianceCheck.parameters = parameters;
+  
+      // Sauvegarder les modifications
+      await userComplianceCheck.save();
+  
+      return res.status(200).json({
+        message: 'Les paramètres ont été mis à jour avec succès.',
+        data: userComplianceCheck,
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des paramètres :', error);
+      return res.status(500).json({
+        message: 'Erreur interne du serveur.',
+      });
+    }
+  },
+  
+  
+  getComplianceCheckParameters : async (req, res) => {
+    const { id_compliance_check } = req.params;
+  
+    try {
+      // Vérifier si le Compliance Check existe
+      const complianceCheck = await ComplianceCheck.findByPk(id_compliance_check, {
+        include: {
+          model: ComplianceCheckParameter,
+          as: 'parameters', // Alias défini dans les relations
+          attributes: ['id_parameter', 'name', 'type', 'default_value'],
+        },
+      });
+  
+      if (!complianceCheck) {
+        return res.status(404).json({
+          message: `Le Compliance Check avec l'ID ${id_compliance_check} n'existe pas.`,
+        });
+      }
+  
+      // Retourner les paramètres associés
+      return res.status(200).json({
+        complianceCheck: {
+          id: complianceCheck.id_compliance_check,
+          name: complianceCheck.name,
+          description: complianceCheck.description,
+        },
+        parameters: complianceCheck.parameters,
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération des paramètres :', error);
+      return res.status(500).json({
+        message: 'Erreur interne du serveur',
+      });
+    }
+  }
+  
+
+  
  };
+
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
 
 
  const checkEachRule = async (id_timetable) => {
@@ -503,6 +725,10 @@ const checkDaysOff = async (mensualTimetable, parameters, complianceCheck) => {
 
 
 // checkEachRule(1);
+
+
+
+
 
 
  module.exports = complianceCheckController;
