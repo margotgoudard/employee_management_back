@@ -76,19 +76,19 @@ VALUES
 ( 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
-INSERT INTO user_compliance_check (id_user_compliance_check, id_compliance_check, id_user, parameters, "createdAt", "updatedAt")
+INSERT INTO user_compliance_check (id_compliance_check, id_user, parameters, "createdAt", "updatedAt")
 VALUES
     -- Heures maximales quotidiennes
-    (1, 1, 1, '{"id_parameter": 1, "value": 8}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (1, 1, '{"id_parameter": 1, "value": 8}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales hebdomadaires
-    (2, 2, 1, '{"id_parameter": 2, "value": 40}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (2, 1, '{"id_parameter": 2, "value": 40}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Heures maximales mensuelles
-    (3, 3, 1, '{"id_parameter": 3, "value": 160}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (3, 1, '{"id_parameter": 3, "value": 160}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Temps de pause quotidienne (avec plusieurs paramètres)
-    (4, 4, 1, 
+    (4, 1, 
      '[
         {"id_parameter": 4, "value": 15},
         {"id_parameter": 5, "value": 30},
@@ -99,13 +99,13 @@ VALUES
      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Temps minimal entre la fin de journée de travail et le début de la journée suivante
-    (5, 5, 1, '{"id_parameter": 9, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (5, 1, '{"id_parameter": 9, "value": 11}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Durée maximale d’un bloc de travail sans pause
-    (6, 6, 1, '{"id_parameter": 10, "value": 6}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (6, 1, '{"id_parameter": 10, "value": 6}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
     -- Minimum de jours de repos par semaine
-    (7, 7, 1, '{"id_parameter": 11, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+    (7, 1, '{"id_parameter": 11, "value": 2}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insertion des permissions
 -- Insertion des permissions avec les colonnes createdAt et updatedAt
