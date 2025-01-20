@@ -112,10 +112,11 @@ VALUES
 INSERT INTO permission (name, "createdAt", "updatedAt")
 VALUES
     ('Créer un employé', NOW(), NOW()),
-    ('Afficher la fiche horaire', NOW(), NOW()),
+    ('Avoir une fiche horaire', NOW(), NOW()),
     ('Ajouter des notes de frais', NOW(), NOW()),
     ('Ajouter une commission', NOW(), NOW()),
     ('Valider les fiches horaires', NOW(), NOW());
+    ('Créer un département', NOW(), NOW()),
 
 
 

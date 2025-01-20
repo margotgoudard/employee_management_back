@@ -9,7 +9,6 @@ const ExpenseReport = require('./ExpenseReport.js');
 const DailyTimetableSheet = require('./DailyTimetableSheet.js');
 const TimeSlot = require('./TimeSlot.js');
 const MensualTimetableSheet = require('./MensualTimetableSheet.js');
-
 const Permission = require('./Permission.js');
 const DocumentCategory = require('./DocumentCategory.js');
 const Document = require('./Document.js');
