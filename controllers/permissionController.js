@@ -114,11 +114,9 @@ const permissionController = {
 
   getPermissionsByUserId: async (req, res) => {
     try {
-      console.log('Paramètres reçus:', req.params);
       const { id_user } = req.params;
   
       if (!id_user) {
-        console.log("Erreur: L'ID utilisateur est manquant");
         return res.status(400).json({ error: "L'ID utilisateur est requis" });
       }
   
@@ -130,12 +128,10 @@ const permissionController = {
       });
   
       if (!user) {
-        console.log("Erreur: Utilisateur introuvable");
         return res.status(404).json({ error: "Utilisateur introuvable" });
       }
   
-      console.log('Permissions récupérées:', user.Permissions);
-      return res.status(200).json(user.Permissions); // Renvoie les permissions associées à l'utilisateur
+      return res.status(200).json(user.Permissions); 
     } catch (error) {
       console.error('Erreur interne:', error);
       return res.status(500).json({ error: 'Erreur interne du serveur' });

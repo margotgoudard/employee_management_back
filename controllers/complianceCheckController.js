@@ -41,7 +41,6 @@ const complianceCheckController = {
           sundayDate.setDate(mondayDate.getDate() + 6);
           updatedWeeklyHours[sundayDate] = weeklyHours[key];
         });
-        console.log('***************************************************************Weekly hours:', weeklyHours, updatedWeeklyHours);
         return res.status(200).json(updatedWeeklyHours);
       }
     } catch (error) {
@@ -72,7 +71,6 @@ const complianceCheckController = {
   complianceCheckForTimeTable: async (req, res) => {
     try {
       const { id } = req.params;
-      console.log('Checking compliance for timetable:', id);
       const violations = await checkEachRule(id);
 
       return res.status(200).json(violations);
@@ -335,7 +333,6 @@ const complianceCheckController = {
     return;
   }
   const id_user = mensualTimetable.id_user;
-  console.log('**Checking compliance rules for user:', id_user, 'timetable:', id_timetable);
   const userComplianceChecks = await UserComplianceCheck.findAll({
     where: { id_user },
     include: [
@@ -372,7 +369,6 @@ const complianceCheckController = {
   for (const ucc of userComplianceChecks) {
    const parameters = ucc.parameters;
    const complianceCheck = ucc.complianceCheck;
-   console.log('Checking compliance rule:', ucc.complianceCheck.function_code, 'with parameters:', parameters);
    switch (complianceCheck.function_code) {
     case 'DAILY_HOUR':
       updateViolations(await checkDailyHour(mensualTimetable, [parameters], complianceCheck));
@@ -403,7 +399,6 @@ const complianceCheckController = {
 };
 
 const checkDailyHour = async (mensualTimetable, parameters, complianceCheck) => {
- console.log('Checking daily params:', { parameters });
 
  const maxDailyHours = parameters[0].value;
 
@@ -508,7 +503,6 @@ const calculateWeeklyHours = async (mensualTimetable) => {
 const checkWeeklyHour = async (mensualTimetable, parameters, complianceCheck) => {
   const maxWeeklyHours = parameters[0].value;
   const weeklyHours = await calculateWeeklyHours(mensualTimetable); 
-  console.log('Weekly hours:', weeklyHours);
 
   const violations = Object.entries(weeklyHours).reduce((acc, [week, hours]) => {
     if (hours > maxWeeklyHours) {
