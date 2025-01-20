@@ -3,7 +3,6 @@ const TimeSlot = require('../models/TimeSlot');
 const sequelize = require('../config/sequelize');
 const { createAudit } = require('./auditController'); 
 
-// Fonction pour calculer le nombre d'heures travaillées sur un jour
 const calculateWorkedHours = (timeSlots) => {
   let totalWorkedSeconds = 0;
 
@@ -145,7 +144,6 @@ const dailyTimetableController = {
     }
   },
 
-  // Supprimer un emploi du temps quotidien
   deleteDailyTimetable: async (req, res) => {
     try {
       const { id } = req.params;

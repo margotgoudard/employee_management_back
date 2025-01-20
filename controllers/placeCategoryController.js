@@ -4,7 +4,6 @@ const { createAudit } = require('./auditController');
 
 const placeCategoryController = {
 
-  // Créer une catégorie de lieux
   createPlaceCategory: async (req, res) => {
     try {
       const { name } = req.body;
@@ -26,7 +25,6 @@ const placeCategoryController = {
     }
   },
 
-  // Récupérer toutes les catégories de lieux
   getPlaceCategories: async (req, res) => {
     try {
       const placeCategories = await PlaceCategory.findAll();
@@ -37,7 +35,6 @@ const placeCategoryController = {
     }
   },
 
-  // Récupérer une catégorie par ID
   getPlaceCategoryById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -54,7 +51,6 @@ const placeCategoryController = {
     }
   },
 
-  // Mettre à jour une catégorie de lieux
   updatePlaceCategory: async (req, res) => {
     try {
       const { id } = req.params;
@@ -85,7 +81,6 @@ const placeCategoryController = {
     }
   },
 
-  // Supprimer une catégorie de lieux
   deletePlaceCategory: async (req, res) => {
     try {
       const { id } = req.params;

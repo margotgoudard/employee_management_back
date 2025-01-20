@@ -4,7 +4,6 @@ const PlaceCategory = require('../models/PlaceCategory')
 
 const timeSlotController = {
 
-  // Créer un nouveau TimeSlot
   createTimeSlot: async (req, res) => {
     try {
       const {
@@ -56,7 +55,6 @@ const timeSlotController = {
     }
   },
 
-  // Récupérer tous les TimeSlots pour un id_daily_time donné
   getTimeSlots: async (req, res) => {
     try {
       const { id } = req.params;
@@ -82,7 +80,6 @@ const timeSlotController = {
     }
   },
 
-  // Récupérer un TimeSlot par son ID
   getTimeSlotById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -99,7 +96,6 @@ const timeSlotController = {
     }
   },
 
-  // Mettre à jour un TimeSlot par son ID
   updateTimeSlot: async (req, res) => {
     try {
       const { id } = req.params;
@@ -154,7 +150,6 @@ const timeSlotController = {
     }
   },
 
-  // Supprimer un TimeSlot par son ID
   deleteTimeSlot: async (req, res) => {
     try {
       const { id } = req.params;

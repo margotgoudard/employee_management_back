@@ -165,7 +165,7 @@ const companyController = {
         return res.status(404).json({ message: 'Company not found' });
       }
 
-      return res.status(200).json(company.Users.map((user) => user.toJSON())); // Conversion directe en JSON
+      return res.status(200).json(company.Users.map((user) => user.toJSON())); 
     } catch (error) {
       return res.status(500).json({ message: 'Error fetching users by company', error });
     }

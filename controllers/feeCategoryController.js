@@ -3,7 +3,6 @@ const { createAudit } = require('../controllers/auditController');
 
 const feeCategoryController = {
 
-  // Créer une catégorie de frais
   createFeeCategory: async (req, res) => {
     try {
       const { name } = req.body;
@@ -25,7 +24,6 @@ const feeCategoryController = {
     }
   },
 
-  // Récupérer toutes les catégories de frais
   getFeeCategories: async (req, res) => {
     try {
       const feeCategories = await FeeCategory.findAll();
@@ -36,7 +34,6 @@ const feeCategoryController = {
     }
   },
 
-  // Récupérer une catégorie de frais par ID
   getFeeCategoryById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -53,7 +50,6 @@ const feeCategoryController = {
     }
   },
 
-  // Mettre à jour une catégorie de frais
   updateFeeCategory: async (req, res) => {
     try {
       const { id } = req.params;
@@ -84,7 +80,6 @@ const feeCategoryController = {
     }
   },
 
-  // Supprimer une catégorie de frais
   deleteFeeCategory: async (req, res) => {
     try {
       const { id } = req.params;

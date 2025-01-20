@@ -6,7 +6,6 @@ const { calculateWorkedHours } = require('../controllers/dailyTimetableControlle
 const { createAudit } = require('./auditController');
 const { handleMensualTimetableNotification } = require('../controllers/notificationController')
 
-// Fonction pour calculer le total des notes de frais d'un mois
 const calculateTotalExpenseNotes = (dailyTimetables) => {
   let totalExpenseNotes = 0;
   dailyTimetables.forEach(dailyTimetable => {

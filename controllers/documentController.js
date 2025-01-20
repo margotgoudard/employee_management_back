@@ -139,21 +139,18 @@ const documentController = {
             const { id_document } = req.params;
             const { id_document_category, id_user } = req.body;
     
-            // Rechercher le document existant
             const document = await Document.findByPk(id_document);
     
             if (!document) {
                 return res.status(404).json({ message: 'Document not found' });
             }
     
-            // Sauvegarder les anciennes valeurs pour l'audit
             const oldValues = {
                 name: document.name,
                 id_document_category: document.id_document_category,
                 id_user: document.id_user,
             };
     
-            // Vérification de l'existence de la catégorie de document (si modifiée)
             if (id_document_category) {
                 const Documentcategory = await DocumentCategory.findByPk(id_document_category);
                 if (!Documentcategory) {
@@ -161,7 +158,6 @@ const documentController = {
                 }
             }
     
-            // Vérification de l'existence de l'utilisateur (si modifié)
             if (id_user) {
                 const user = await User.findByPk(id_user);
                 if (!user) {
@@ -169,16 +165,14 @@ const documentController = {
                 }
             }
     
-            // Mettre à jour le contenu du document (fichier)
             let updatedDocument = document.document;
-            let updatedName = document.name; // Nom par défaut (non modifié)
+            let updatedName = document.name; 
     
             if (req.file) {
-                updatedDocument = req.file.buffer; // Met à jour le contenu
-                updatedName = req.file.originalname; // Utilise le nom du fichier uploadé
+                updatedDocument = req.file.buffer; 
+                updatedName = req.file.originalname; 
             }
     
-            // Mettre à jour le document avec les nouvelles valeurs
             await document.update({
                 name: updatedName,
                 id_document_category,
@@ -186,7 +180,6 @@ const documentController = {
                 document: updatedDocument,
             });
     
-            // Créer une entrée d'audit pour les modifications
             await createAudit({
                 table_name: 'document',
                 action: 'UPDATE',

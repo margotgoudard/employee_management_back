@@ -1,7 +1,6 @@
 const Audit = require('../models/Audit');
 const User = require('../models/User');
 
-// Fonction utilitaire pour créer un audit
 const createAudit = async ({ table_name, action, old_values, new_values, userId }) => {
   try {
     const user = await User.findByPk(userId);
@@ -23,7 +22,6 @@ const createAudit = async ({ table_name, action, old_values, new_values, userId 
 };
 
 const auditController = {
-  // Créer un audit
   createAudit: async (req, res) => {
     try {
       const { table_name, action, old_values, new_values } = req.body;
@@ -37,7 +35,6 @@ const auditController = {
     }
   },
 
-  // Récupérer tous les audits
   getAudits: async (req, res) => {
     try {
       const audits = await Audit.findAll();
@@ -47,7 +44,6 @@ const auditController = {
     }
   },
 
-  // Récupérer un audit par ID
   getAuditById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -63,7 +59,6 @@ const auditController = {
     }
   },
 
-  // Mettre à jour un audit
   updateAudit: async (req, res) => {
     try {
       const { id_audit } = req.params;
@@ -75,13 +70,10 @@ const auditController = {
         return res.status(404).json({ message: 'Audit not found' });
       }
 
-      // Stocker les anciennes valeurs avant mise à jour
       const oldValues = { ...audit.dataValues };
 
-      // Mettre à jour l'audit
       await audit.update({ table_name, action, old_values, new_values });
 
-      // Créer un audit pour la mise à jour
       await createAudit({
         table_name: 'audit',
         action: 'UPDATE',
@@ -96,7 +88,6 @@ const auditController = {
     }
   },
 
-  // Supprimer un audit
   deleteAudit: async (req, res) => {
     try {
       const { id_audit } = req.params;

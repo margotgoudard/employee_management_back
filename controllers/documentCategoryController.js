@@ -3,7 +3,6 @@ const { createAudit } = require('./auditController.js');
 
 const documentCategoryController = {
 
-  // Création d'une nouvelle catégorie de document
   createDocumentCategory: async (req, res) => {
     try {
       const { name } = req.body;
@@ -28,7 +27,6 @@ const documentCategoryController = {
     }
   },
 
-  // Récupérer toutes les catégories de documents
   getDocumentCategories: async (req, res) => {
     try {
       const categories = await DocumentCategory.findAll();
@@ -39,7 +37,6 @@ const documentCategoryController = {
     }
   },
 
-  // Récupérer une catégorie de document par ID
   getDocumentCategoryById: async (req, res) => {
     try {
       const { id_document_category } = req.params;
@@ -55,7 +52,6 @@ const documentCategoryController = {
     }
   },
 
-  // Mettre à jour une catégorie de document
   updateDocumentCategory: async (req, res) => {
     try {
       const { id_document_category } = req.params;
@@ -85,7 +81,6 @@ const documentCategoryController = {
     }
   },
 
-  // Supprimer une catégorie de document
   deleteDocumentCategory: async (req, res) => {
     try {
       const { id_document_category } = req.params;

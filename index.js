@@ -12,14 +12,12 @@ require("dotenv").config({
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(helmet()); 
 app.use(express.json());
 
 sequelizeAuthAndSync();  
 
-// Tâche cron pour créer les emplois du temps mensuels chaque premier jour du mois à minuit
 cron.schedule('0 0 1 * *', async () => {
     console.log('Starting monthly timetable creation (test)...');
     try {

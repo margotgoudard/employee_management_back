@@ -4,7 +4,6 @@ const sequelize = require('../config/sequelize');
 
 const departmentController = {
 
-  // Créer un department
   createDepartment: async (req, res) => {
     try {
       const { name, id_sup_department, id_company } = req.body;
@@ -27,7 +26,6 @@ const departmentController = {
     }
   },
 
-  // Récupérer tous les departments
   getDepartments: async (req, res) => {
     try {
       const departments = await Department.findAll();
@@ -38,7 +36,6 @@ const departmentController = {
     }
   },
 
-  // Récupérer un department par ID
   getDepartmentById: async (req, res) => {
     try {
       const { id_department } = req.params;
@@ -56,7 +53,6 @@ const departmentController = {
     }
   },
 
-  // Mettre à jour un department
   updateDepartment: async (req, res) => {
     try {
       const { id_department } = req.params;
@@ -88,7 +84,6 @@ const departmentController = {
     }
   },
 
-  // Supprimer un department
   deleteDepartment: async (req, res) => {
     try {
       const { id_department } = req.params;
@@ -119,7 +114,6 @@ const departmentController = {
     }
   },
   
-  // Récupérer les sous-départements d'un département
   getSubDepartments: async (req, res) => {
     try {
       const { id_department } = req.params;
@@ -139,7 +133,6 @@ const departmentController = {
     }
   },
 
-    // Récupérer tous les départements d'une entreprise
     getDepartmentsByCompany: async (req, res) => {
     try {
       const { id_company } = req.params;

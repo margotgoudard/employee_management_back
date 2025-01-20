@@ -10,7 +10,6 @@ router.get('/:id', validateToken, dailyTimetableController.getDailyTimetableById
 router.put('/:id', validateToken, dailyTimetableController.updateDailyTimetable);
 router.delete('/:id', validateToken, dailyTimetableController.deleteDailyTimetable);
 
-// Calculated route
 router.get('/number-worked/:id', dailyTimetableController.getTotalWorkedHours);
 
 module.exports = router;

@@ -3,7 +3,6 @@ const { createAudit } = require('./auditController');
 
 const permissionController = {
 
-  // Créer une permission
   createPermission: async (req, res) => {
     try {
       const { name } = req.body;
@@ -29,7 +28,6 @@ const permissionController = {
     }
   },
 
-  // Récupérer toutes les permissions
   getPermissions: async (req, res) => {
     try {
       const permissions = await Permission.findAll();
@@ -39,7 +37,6 @@ const permissionController = {
     }
   },
 
-  // Récupérer une permission par ID
   getPermissionById: async (req, res) => {
     try {
       const { id_permission } = req.params;
@@ -56,7 +53,6 @@ const permissionController = {
     }
   },
 
-  // Mettre à jour une permission
   updatePermission: async (req, res) => {
     try {
       const { id_permission } = req.params;
@@ -87,7 +83,6 @@ const permissionController = {
     }
   },
 
-  // Supprimer une permission
   deletePermission: async (req, res) => {
     try {
       const { id_permission } = req.params;
@@ -117,7 +112,6 @@ const permissionController = {
     }
   },
 
-  // Récupérer les permissions d'un utilisateur par ID
   getPermissionsByUserId: async (req, res) => {
     try {
       console.log('Paramètres reçus:', req.params);
@@ -128,7 +122,6 @@ const permissionController = {
         return res.status(400).json({ error: "L'ID utilisateur est requis" });
       }
   
-      // Trouver l'utilisateur avec ses permissions
       const user = await User.findByPk(id_user, {
         include: {
           model: Permission,

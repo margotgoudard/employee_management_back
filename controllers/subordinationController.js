@@ -67,7 +67,6 @@ const getManagerForUser = async (userId) => {
   
   const getSubordinatesRecursive = async (managerId) => {
     try {
-        // Trouver les subordonnés directs de ce manager
         const directSubordinates = await Subordination.findAll({
             where: { id_manager: managerId },
             include: [
@@ -87,7 +86,6 @@ const getManagerForUser = async (userId) => {
     
         let allSubordinates = [...directSubordinates];
     
-        // Pour chaque subordonné direct, trouver ses subordonnés (récursivement)
         for (const subordinate of directSubordinates) {
             const nestedSubordinates = await getSubordinatesRecursive(subordinate.id_user);
             allSubordinates.push(...nestedSubordinates);
@@ -103,7 +101,6 @@ const getManagerForUser = async (userId) => {
 
 const subordinationController = {
 
-  // Créer une subordination
   assignManagerToUser: async (req, res) => {
     try {
       const { id_user, id_manager} = req.body;
@@ -151,7 +148,6 @@ const subordinationController = {
     }
   },
 
-  // Obtenir la liste des subordonnés pour un manager dans un département
   getSubordinatesByManager : async (req, res) => {
     const { id_manager } = req.params;
   
@@ -225,7 +221,6 @@ const subordinationController = {
     }
   },
 
-  // Mettre à jour la subordination (changer le manager d'un utilisateur dans un département)
   updateSubordination: async (req, res) => {
     try {
       const { id_user, id_manager } = req.body;

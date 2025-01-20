@@ -82,7 +82,6 @@ const complianceCheckController = {
     }
   },
 
-  // Récupérer les compliance checks assignés à un utilisateur
   getAssignedComplianceChecks: async (req, res) => {
     const { id_user } = req.params;
 
@@ -165,7 +164,6 @@ const complianceCheckController = {
   },
 
 
-  // Récupérer tous les compliance checks
   getAllComplianceChecks : async (req, res) => {
     try {
       const complianceChecks = await ComplianceCheck.findAll({
@@ -178,7 +176,6 @@ const complianceCheckController = {
     }
   },
 
-  // Ajouter un compliance check à un utilisateur
   addComplianceCheckToUser: async (req, res) => {
     const { id_user, id_compliance_check } = req.params;
     const userId = req.auth.userId;
@@ -204,8 +201,6 @@ const complianceCheckController = {
     }
   },
 
-
-  // Supprimer un compliance check d'un utilisateur
   removeComplianceCheckFromUser: async (req, res) => {
     const { id_user, id_compliance_check } = req.params;
     const userId = req.auth.userId;
@@ -238,7 +233,6 @@ const complianceCheckController = {
     }
   },
 
-  // Mettre à jour les paramètres d'un compliance check
   updateComplianceCheckParameters: async (req, res) => {
     const { id_user, id_compliance_check } = req.params;
     const { parameters } = req.body;
